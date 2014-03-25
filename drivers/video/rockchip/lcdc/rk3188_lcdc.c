@@ -939,7 +939,7 @@ static int rk3188_lcdc_ioctl(struct rk_lcdc_device_driver *dev_drv, unsigned int
 			}
 			break;
 		default:
-			ret = -ENOTSUPP;
+			ret = -ENOIOCTLCMD;
 			break;
 	}
 	return ret;
