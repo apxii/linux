@@ -58,6 +58,72 @@
 
 #ifdef CONFIG_FB_ROCKCHIP
 
+#define LCD_CS_PIN         INVALID_GPIO
+#define LCD_CS_VALUE       GPIO_HIGH
+
+#define LCD_EN_PIN         RK30_PIN0_PB0
+#define LCD_EN_VALUE       GPIO_LOW
+
+static int rk_fb_io_init(struct rk29_fb_setting_info *fb_setting)
+{
+	int ret = 0;
+
+	if(LCD_CS_PIN !=INVALID_GPIO)
+	{
+		ret = gpio_request(LCD_CS_PIN, NULL);
+		if (ret != 0)
+		{
+			gpio_free(LCD_CS_PIN);
+			printk(KERN_ERR "request lcd cs pin fail!\n");
+			return -1;
+		}
+		else
+		{
+			gpio_direction_output(LCD_CS_PIN, LCD_CS_VALUE);
+		}
+	}
+
+	if(LCD_EN_PIN !=INVALID_GPIO)
+	{
+		ret = gpio_request(LCD_EN_PIN, NULL);
+		if (ret != 0)
+		{
+			gpio_free(LCD_EN_PIN);
+			printk(KERN_ERR "request lcd en pin fail!\n");
+			return -1;
+		}
+		else
+		{
+			gpio_direction_output(LCD_EN_PIN, LCD_EN_VALUE);
+		}
+	}
+	return 0;
+}
+static int rk_fb_io_disable(void)
+{
+	if(LCD_CS_PIN !=INVALID_GPIO)
+	{
+		gpio_set_value(LCD_CS_PIN, !LCD_CS_VALUE);
+	}
+	if(LCD_EN_PIN !=INVALID_GPIO)
+	{
+		gpio_set_value(LCD_EN_PIN, !LCD_EN_VALUE);
+	}
+	return 0;
+}
+static int rk_fb_io_enable(void)
+{
+	if(LCD_CS_PIN !=INVALID_GPIO)
+	{
+		gpio_set_value(LCD_CS_PIN, LCD_CS_VALUE);
+	}
+	if(LCD_EN_PIN !=INVALID_GPIO)
+	{
+		gpio_set_value(LCD_EN_PIN, LCD_EN_VALUE);
+	}
+	return 0;
+}
+
 #if defined(CONFIG_LCDC0_RK3188) || defined(CONFIG_LCDC0_RK3188_MODULE)
 struct rk29fb_info lcdc0_screen_info = {
 	.prop			= EXTEND,
@@ -70,6 +136,9 @@ struct rk29fb_info lcdc0_screen_info = {
 #if defined(CONFIG_LCDC1_RK3188) || defined(CONFIG_LCDC1_RK3188_MODULE)
 struct rk29fb_info lcdc1_screen_info = {
 	.prop			= PRMRY,
+	.io_init		= rk_fb_io_init,
+	.io_disable		= rk_fb_io_disable,
+	.io_enable		= rk_fb_io_enable,
 	.set_screen_info	= set_lcd_info,
 };
 #endif
@@ -462,7 +531,7 @@ static struct rkdisplay_platform_data tv_data = {
 	.property	= DISPLAY_AUX,
 	.video_source 	= DISPLAY_SOURCE_LCDC0,
 	.io_pwr_pin 	= INVALID_GPIO,
-	.io_reset_pin 	= RK30_PIN_PD7,
+	.io_reset_pin 	= RK30_PIN3_PD7,
 	.io_switch_pin	= INVALID_GPIO,
 };
 #endif
@@ -820,9 +889,8 @@ static void __init rk30_reserve(void)
 	resource_fb[0].start = board_mem_reserve_add("fb0 buf", get_fb_size());
 	resource_fb[0].end = resource_fb[0].start + get_fb_size()- 1;
 
-//#if defined(CONFIG_FB_ROTATE) || !defined(CONFIG_THREE_FB_BUFFER)
-#if 1
-	resource_fb[1].start = board_mem_reserve_add("fb1 buf", get_fb_size());
+#if defined(CONFIG_FB_ROTATE) || !defined(CONFIG_THREE_FB_BUFFER)
+	resource_fb[1].start = board_mem_reserve_add("ipp buf", get_fb_size());
 	resource_fb[1].end = resource_fb[0].start + get_fb_size()- 1;
 
 	resource_fb[2].start = board_mem_reserve_add("fb2 buf",get_fb_size());
