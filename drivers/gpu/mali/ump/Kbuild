@@ -31,7 +31,7 @@ SVN_REV := $(shell ((svnversion | grep -qv exported && echo -n 'Revision: ' && s
 ccflags-y += -DSVN_REV=$(SVN_REV)
 ccflags-y += -DSVN_REV_STRING=\"$(SVN_REV)\"
 
-ccflags-y += -I$(src) -I$(src)/common -I$(src)/linux -I$(src)/../mali/common -I$(src)/../mali/linux -I$(src)/../../ump/include/ump
+ccflags-y += -I$(src) -I$(src)/common -I$(src)/linux -I$(src)/../mali/common -I$(src)/../mali/linux -I$(src)/../ump/include/ump
 ccflags-y += -DMALI_STATE_TRACKING=0
 ccflags-$(CONFIG_UMP_DEBUG) += -DDEBUG
 
