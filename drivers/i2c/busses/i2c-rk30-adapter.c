@@ -90,6 +90,7 @@ enum{
 
 static void rk30_show_regs(struct rk30_i2c *i2c)
 {
+#if 0
         int i;
         dev_info(i2c->dev, "i2c->clk = %lu\n", clk_get_rate(i2c->clk));
         dev_info(i2c->dev, "i2c->start = %d\n", i2c->state);
@@ -106,6 +107,7 @@ static void rk30_show_regs(struct rk30_i2c *i2c)
                 dev_info(i2c->dev, "I2C_TXDATA%d: 0x%08x\n", i, i2c_readl(i2c->regs + I2C_TXDATA_BASE + i * 4));
         for( i = 0; i < 8; i ++) 
                 dev_info(i2c->dev, "I2C_RXDATA%d: 0x%08x\n", i, i2c_readl(i2c->regs + I2C_RXDATA_BASE + i * 4));
+#endif
 }
 
 static int rk30_i2c_check_idle(struct rk30_i2c *i2c)
