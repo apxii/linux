@@ -526,13 +526,21 @@ static struct rkdisplay_platform_data hdmi_data = {
 	.io_reset_pin 	= RK30_PIN3_PB2,
 };
 
-#if defined(CONFIG_RK1000_TVOUT) || defined(CONFIG_MFD_RK1000) || defined(CONFIG_RK1000_TVOUT_MODULE) || defined(CONFIG_MFD_RK1000_MODULE)
+#if defined(CONFIG_RK1000_TVOUT) || defined(CONFIG_MFD_RK1000) || defined(CONFIG_RK1000_TVOUT_MODULE) || defined(CONFIG_MFD_RK1000_MODULE) || defined(CONFIG_SND_SOC_RK1000) || defined(CONFIG_SND_SOC_RK1000_MODULE)
 static struct rkdisplay_platform_data tv_data = {
-	.property	= DISPLAY_AUX,
+	#ifdef CONFIG_DUAL_LCDC_DUAL_DISP_IN_KERNEL
+	.property 		= DISPLAY_AUX,
+	#else
+	.property 		= DISPLAY_MAIN,
+	#endif
+#if defined(CONFIG_RK_LCDC0_AS_PRIMARY)
 	.video_source 	= DISPLAY_SOURCE_LCDC0,
+#else
+	.video_source 	= DISPLAY_SOURCE_LCDC1,
+#endif
 	.io_pwr_pin 	= INVALID_GPIO,
-	.io_reset_pin 	= RK30_PIN3_PD7,
-	.io_switch_pin	= INVALID_GPIO,
+	.io_reset_pin 	= RK30_PIN3_PD4,
+	.io_switch_pin	= RK30_PIN2_PD7,
 };
 #endif
 
@@ -741,11 +749,22 @@ void  rk30_pwm_resume_voltage_set(void)
 #endif
 }
 
-#if defined(CONFIG_HDMI_CAT66121)
+
+#if defined(CONFIG_RK_HDMI) || defined(CONFIG_RK_HDMI_MODULE)
 #define RK_HDMI_RST_PIN 			RK30_PIN3_PB2
+#define RK_HDMI_EN_PIN   			RK30_PIN3_PA0
+
+#if  defined(CONFIG_HDMI_CAT66121) || defined(CONFIG_HDMI_CAT66121_MODULE)
 static int rk_hdmi_power_init(void)
 {
-	int ret;
+	if(RK_HDMI_EN_PIN != INVALID_GPIO)
+	{
+		if (gpio_request(RK_HDMI_EN_PIN, NULL)) {
+			printk("func %s, line %d: request gpio fail\n", __FUNCTION__, __LINE__);
+			return -1;
+		}
+		gpio_direction_output(RK_HDMI_EN_PIN, GPIO_LOW);
+	}
 
 	if(RK_HDMI_RST_PIN != INVALID_GPIO)
 	{
@@ -759,15 +778,60 @@ static int rk_hdmi_power_init(void)
 		gpio_set_value(RK_HDMI_RST_PIN, GPIO_HIGH);
 		msleep(50);
 	}
+
 	return 0;
 }
+
+static int rk_hdmi_enter_suspend(void)
+{
+	struct regulator *ldo_hdmi_12;
+
+	gpio_set_value(RK_HDMI_RST_PIN, GPIO_LOW);
+	gpio_set_value(RK_HDMI_EN_PIN, GPIO_HIGH);
+	
+	ldo_hdmi_12 = regulator_get(NULL, "act_ldo2");
+	if (ldo_hdmi_12 == NULL || IS_ERR(ldo_hdmi_12)){
+		printk("get hdmi 1.2V ldo failed!\n");
+		return -1;
+	}
+
+	while(regulator_is_enabled(ldo_hdmi_12)>0)
+			regulator_disable(ldo_hdmi_12);
+	regulator_put(ldo_hdmi_12);
+	
+	return 0;
+}
+
+static int rk_hdmi_exit_suspend(void)
+{
+	struct regulator *ldo_hdmi_12;
+
+	ldo_hdmi_12 = regulator_get(NULL, "act_ldo2");
+
+	if (ldo_hdmi_12 == NULL || IS_ERR(ldo_hdmi_12)){
+		printk("get hdmi 1.2V ldo failed!\n");
+		return -1;
+	}
+	regulator_enable(ldo_hdmi_12);
+	regulator_put(ldo_hdmi_12);
+	
+	gpio_direction_output(RK_HDMI_EN_PIN, GPIO_LOW);
+	msleep(100);
+	gpio_direction_output(RK_HDMI_RST_PIN, GPIO_HIGH);
+	msleep(50);
+	return 0;
+}
+
 static struct rk_hdmi_platform_data rk_hdmi_pdata = {
 	.io_init = rk_hdmi_power_init,
+//	.enter_suspend = rk_hdmi_enter_suspend,
+//	.exit_suspend = rk_hdmi_exit_suspend,
 };
-#endif
+#endif  // CONFIG_HDMI_CAT66121
+#endif  // CONFIG_RK_HDMI
+
 #ifdef CONFIG_I2C2_RK30
 static struct i2c_board_info __initdata i2c2_info[] = {
-
 #ifdef CONFIG_IT66121
 {
 		.type		= "it66121",
@@ -796,7 +860,6 @@ static struct i2c_board_info __initdata i2c3_info[] = {
 
 #ifdef CONFIG_I2C4_RK30
 static struct i2c_board_info __initdata i2c4_info[] = {
-
 #if defined (CONFIG_MFD_RK1000) || defined (CONFIG_MFD_RK1000_MODULE)
 	{
 		.type		= "rk1000_control",
@@ -804,7 +867,8 @@ static struct i2c_board_info __initdata i2c4_info[] = {
 		.flags		= 0,
 		.platform_data = &tv_data,
 	},
-#ifdef CONFIG_RK1000_TVOUT
+#endif
+#if defined(CONFIG_RK1000_TVOUT) || defined (CONFIG_RK1000_TVOUT_MODULE)
     {
 		.type           = "rk1000_tvout",
 		.addr           = 0x42,
@@ -820,6 +884,12 @@ static struct i2c_board_info __initdata i2c4_info[] = {
 		.platform_data = &tv_data,
     },
 #endif
+#if defined (CONFIG_SND_SOC_RT5616) || defined (CONFIG_SND_SOC_RT5616_MODULE)
+	{
+		.type           = "rt5616",
+		.addr           = 0x1b,
+		.flags          = 0,
+	},
 #endif
 };
 #endif
