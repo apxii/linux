@@ -333,7 +333,7 @@ static int rk_fb_io_enable(void)
 	return 0;
 }
 
-#if defined(CONFIG_LCDC0_RK3066B) || defined(CONFIG_LCDC0_RK3188)
+#if defined(CONFIG_LCDC0_RK3066B) || defined(CONFIG_LCDC0_RK3188) || defined(CONFIG_LCDC0_RK3066B_MODULE) || defined(CONFIG_LCDC0_RK3188_MODULE)
 struct rk29fb_info lcdc0_screen_info = {
 #if defined(CONFIG_RK_LCDC0_AS_PRIMARY)
 	.prop      = PRMRY,		//primary display device
@@ -359,7 +359,7 @@ struct rk29fb_info lcdc0_screen_info = {
 #endif
 };
 #endif
-#if defined(CONFIG_LCDC1_RK3066B) || defined(CONFIG_LCDC1_RK3188)
+#if defined(CONFIG_LCDC1_RK3066B) || defined(CONFIG_LCDC1_RK3188) || defined(CONFIG_LCDC1_RK3066B_MODULE) || defined(CONFIG_LCDC1_RK3188_MODULE)
 struct rk29fb_info lcdc1_screen_info = {
 #if defined(CONFIG_RK_LCDC1_AS_PRIMARY)
 	.prop      = PRMRY,		//primary display device
@@ -415,6 +415,8 @@ static struct platform_device device_fb = {
 };
 #endif
 
+#if 0
+/* it is used only by rk compiled mali,ko */
 #if defined(CONFIG_ARCH_RK3188)
 static struct resource resource_mali[] = {
 	[0] = {
@@ -440,8 +442,8 @@ static struct platform_device device_mali= {
 	.resource	= resource_mali,
 };
 #endif
-
-#if defined(CONFIG_LCDC0_RK3066B) || defined(CONFIG_LCDC0_RK3188)
+#endif
+#if defined(CONFIG_LCDC0_RK3066B) || defined(CONFIG_LCDC0_RK3188) || defined(CONFIG_LCDC0_RK3066B_MODULE) || defined(CONFIG_LCDC0_RK3188_MODULE)
 static struct resource resource_lcdc0[] = {
 	[0] = {
 		.name  = "lcdc0 reg",
@@ -468,7 +470,7 @@ static struct platform_device device_lcdc0 = {
 };
 #endif
 
-#if defined(CONFIG_LCDC1_RK3066B) || defined(CONFIG_LCDC1_RK3188)
+#if defined(CONFIG_LCDC1_RK3066B) || defined(CONFIG_LCDC1_RK3188) || defined(CONFIG_LCDC1_RK3066B_MODULE) || defined(CONFIG_LCDC1_RK3188_MODULE)
 static struct resource resource_lcdc1[] = {
 	[0] = {
 		.name  = "lcdc1 reg",
@@ -538,11 +540,11 @@ static struct rk610_codec_platform_data rk610_codec_pdata = {
 };
 #endif
 
-#ifdef CONFIG_RK_HDMI
+#if defined(CONFIG_RK_HDMI) || defined(CONFIG_RK_HDMI_MODULE)
 #define RK_HDMI_RST_PIN 			RK30_PIN3_PB2
 #define RK_HDMI_EN_PIN   			RK30_PIN3_PA0
 
-#if defined(CONFIG_HDMI_CAT66121)
+#if defined(CONFIG_HDMI_CAT66121) || defined(CONFIG_HDMI_CAT66121_MODULE)
 static int rk_hdmi_power_init(void)
 {
 	printk("Omegamoon >> HDMI entering power init\n");
@@ -651,7 +653,9 @@ static struct platform_device device_ion = {
 #ifdef CONFIG_SDMMC_RK29
 #include "../mach-rk30/board-rk3168-tb-sdmmc-conifg.c"
 #include "../plat-rk/rk-sdmmc-ops.c"
+#if 0
 #include "../plat-rk/rk-sdmmc-wifi.c"
+#endif
 #endif //endif ---#ifdef CONFIG_SDMMC_RK29
 
 #ifdef CONFIG_SDMMC0_RK29
@@ -1102,7 +1106,7 @@ static struct platform_device device_mt6622 = {
 /*
  * Codec for the ASoC Rockchip HDMI machine driver
  */
-#ifdef CONFIG_SND_SOC_RK_HDMI_CODEC
+#if defined(CONFIG_SND_SOC_RK_HDMI_CODEC) || defined(CONFIG_SND_SOC_RK_HDMI_CODEC_MODULE)
 static struct platform_device rockchip_hdmi_codec = {
 	.name	= "rockchip-hdmi-codec",
 	.id	= -1,
@@ -1111,18 +1115,21 @@ static struct platform_device rockchip_hdmi_codec = {
 /*
  * Device for the ASoC Rockchip HDMI machine driver
  */
-#ifdef CONFIG_SND_RK_SOC_HDMI
+#if defined(CONFIG_SND_RK_SOC_HDMI) || defined(CONFIG_SND_RK_SOC_HDMI_MODULE)
 static struct platform_device rockchip_hdmi_audio = {
 	.name	= "rockchip-hdmi-audio",
 	.id	= -1,
 };
 #endif
 
-#if defined(CONFIG_DRM_MALI)
+#if 0
+/* it is used only in rk compiled mali.ko */
+#if defined(CONFIG_DRM_MALI) || defined(CONFIG_DRM_MALI_MODULE)
 static struct platform_device rockchip_mali_drm = {
 	.name = "mali_drm",
 	.id   = -1,
 };
+#endif
 #endif
 
 static struct platform_device *devices[] __initdata = {
@@ -1138,8 +1145,10 @@ static struct platform_device *devices[] __initdata = {
 #ifdef CONFIG_RFKILL_RK
 	&device_rfkill_rk,
 #endif
+#if 0
 #if defined(CONFIG_ARCH_RK3188)
 	&device_mali,
+#endif
 #endif
 #ifdef CONFIG_MT5931_MT6622
 	&device_mt6622,
@@ -1150,14 +1159,16 @@ static struct platform_device *devices[] __initdata = {
 #if defined(CONFIG_MT6229)
 	&rk29_device_mt6229,
 #endif
-#ifdef CONFIG_SND_SOC_RK_HDMI_CODEC
+#if defined(CONFIG_SND_SOC_RK_HDMI_CODEC) || defined(CONFIG_SND_SOC_RK_HDMI_CODEC_MODULE)
 	&rockchip_hdmi_codec,
 #endif
-#ifdef CONFIG_SND_RK_SOC_HDMI
+#if defined(CONFIG_SND_RK_SOC_HDMI) || defined(CONFIG_SND_RK_SOC_HDMI_MODULE)
 	&rockchip_hdmi_audio,
 #endif
-#if defined(CONFIG_DRM_MALI)
+#if 0
+#if defined(CONFIG_DRM_MALI) || defined(CONFIG_DRM_MALI_MODULE)
 	&rockchip_mali_drm,
+#endif
 #endif
 };
 
@@ -1167,16 +1178,16 @@ static int rk_platform_add_display_devices(void)
 	struct platform_device *lcdc0 = NULL; // lcdc0
 	struct platform_device *lcdc1 = NULL; // lcdc1
 	struct platform_device *bl = NULL;    // backlight
-#ifdef CONFIG_FB_ROCKCHIP
+#if defined(CONFIG_FB_ROCKCHIP) || defined(CONFIG_FB_ROCKCHIP_MODULE)
 	fb = &device_fb;
 #endif
-#if defined(CONFIG_LCDC0_RK3066B) || defined(CONFIG_LCDC0_RK3188)
+#if defined(CONFIG_LCDC0_RK3066B) || defined(CONFIG_LCDC0_RK3188) || defined(CONFIG_LCDC0_RK3066B_MODULE) || defined(CONFIG_LCDC0_RK3188_MODULE)
 	lcdc0 = &device_lcdc0,
 #endif
-#if defined(CONFIG_LCDC1_RK3066B) || defined(CONFIG_LCDC1_RK3188)
+#if defined(CONFIG_LCDC1_RK3066B) || defined(CONFIG_LCDC1_RK3188) || defined(CONFIG_LCDC1_RK3066B_MODULE) || defined(CONFIG_LCDC1_RK3188_MODULE)
 	lcdc1 = &device_lcdc1,
 #endif
-#ifdef CONFIG_BACKLIGHT_RK29_BL
+#if defined(CONFIG_BACKLIGHT_RK29_BL) || defined(CONFIG_BACKLIGHT_RK29_BL_MODULE)
 	bl = &rk29_device_backlight,
 #endif
 	__rk_platform_add_display_devices(fb,lcdc0,lcdc1,bl);
@@ -1184,7 +1195,7 @@ static int rk_platform_add_display_devices(void)
 	return 0;
 }
 
-#if !defined(CONFIG_HDMI_CAT66121)
+#if !defined(CONFIG_HDMI_CAT66121) && !defined(CONFIG_HDMI_CAT66121_MODULE)
 static struct rkdisplay_platform_data hdmi_data = {
 	.property 		= DISPLAY_MAIN,
 #if defined(CONFIG_RK_LCDC0_AS_PRIMARY)
@@ -1197,7 +1208,7 @@ static struct rkdisplay_platform_data hdmi_data = {
 };
 #endif
 
-#if defined(CONFIG_RK1000_TVOUT) || defined(CONFIG_MFD_RK1000)
+#if defined(CONFIG_RK1000_TVOUT) || defined(CONFIG_MFD_RK1000) || defined(CONFIG_RK1000_TVOUT_MODULE) || defined(CONFIG_MFD_RK1000_MODULE)
 static struct rkdisplay_platform_data tv_data = {
 	#ifdef CONFIG_DUAL_LCDC_DUAL_DISP_IN_KERNEL
 	.property 		= DISPLAY_AUX,
@@ -1219,9 +1230,9 @@ static struct rkdisplay_platform_data tv_data = {
 
 
 // i2c
-#ifdef CONFIG_I2C0_RK30
+#if defined(CONFIG_I2C0_RK30) || defined(CONFIG_I2C0_RK30_MODULE)
 static struct i2c_board_info __initdata i2c0_info[] = {
-#if defined(CONFIG_SND_SOC_RT5631)
+#if defined(CONFIG_SND_SOC_RT5631) || defined(CONFIG_SND_SOC_RT5631_MODULE)
 	{
 		.type		= "rt5631",
 		.addr		= 0x1a,
@@ -1232,7 +1243,7 @@ static struct i2c_board_info __initdata i2c0_info[] = {
 #endif
 
 int __sramdata g_pmic_type =  0;
-#ifdef CONFIG_I2C1_RK30
+#if defined(CONFIG_I2C1_RK30) || defined(CONFIG_I2C1_RK30_MODULE)
 #ifdef CONFIG_REGULATOR_ACT8846
 #define PMU_POWER_SLEEP RK30_PIN0_PA1
 #define PMU_VSEL RK30_PIN3_PD3
@@ -1515,7 +1526,7 @@ static  struct pmu_info  tps65910_ldo_info[] = {
 #endif
 
 static struct i2c_board_info __initdata i2c1_info[] = {
-#if defined (CONFIG_REGULATOR_ACT8846)
+#if defined (CONFIG_REGULATOR_ACT8846) || defined (CONFIG_REGULATOR_ACT8846_MODULE)
 	{
 		.type    		= "act8846",
 		.addr           = 0x5a, 
@@ -1524,7 +1535,7 @@ static struct i2c_board_info __initdata i2c1_info[] = {
 		.platform_data=&act8846_data,
 	},
 #endif
-#if defined (CONFIG_RTC_HYM8563)
+#if defined (CONFIG_RTC_HYM8563) || defined (CONFIG_RTC_HYM8563_MODULE)
 	{
 		.type                   = "rtc_hym8563",
 		.addr           = 0x51,
@@ -1532,7 +1543,7 @@ static struct i2c_board_info __initdata i2c1_info[] = {
 		.irq            = RK30_PIN0_PB5,
 	},
 #endif
-#if defined (CONFIG_MFD_WM831X_I2C)
+#if defined (CONFIG_MFD_WM831X_I2C) || defined (CONFIG_MFD_WM831X_I2C_MODULE)
 	{
 		.type          = "wm8326",
 		.addr          = 0x34,
@@ -1541,7 +1552,7 @@ static struct i2c_board_info __initdata i2c1_info[] = {
 		.platform_data = &wm831x_platdata,
 	},
 #endif
-#if defined (CONFIG_MFD_TPS65910)
+#if defined (CONFIG_MFD_TPS65910) || defined (CONFIG_MFD_TPS65910_MODULE)
 	{
         .type           = "tps65910",
         .addr           = TPS65910_I2C_ID0,
@@ -1555,33 +1566,33 @@ static struct i2c_board_info __initdata i2c1_info[] = {
 
 void __sramfunc board_pmu_suspend(void)
 {      
-    #if defined (CONFIG_REGULATOR_ACT8846)
-       if(pmic_is_act8846())
-       board_pmu_act8846_suspend(); 
-    #endif
-	#if defined (CONFIG_MFD_WM831X_I2C)
-       if(pmic_is_wm8326())
-       board_pmu_wm8326_suspend();
+        #if defined (CONFIG_REGULATOR_ACT8846) || defined (CONFIG_REGULATOR_ACT8846_MODULE)
+        if(pmic_is_act8846())
+	        board_pmu_act8846_suspend(); 
+        #endif
+	#if defined (CONFIG_MFD_WM831X_I2C) || defined (CONFIG_MFD_WM831X_I2C_MODULE)
+        if(pmic_is_wm8326())
+                board_pmu_wm8326_suspend();
 	#endif
-	#if defined (CONFIG_MFD_TPS65910)
-       if(pmic_is_tps65910())
-       board_pmu_tps65910_suspend(); 
-    #endif   
+	#if defined (CONFIG_MFD_TPS65910) || defined (CONFIG_MFD_TPS65910_MODULE)
+        if(pmic_is_tps65910())
+                board_pmu_tps65910_suspend(); 
+        #endif   
 }
 
 void __sramfunc board_pmu_resume(void)
 {      
-	#if defined (CONFIG_REGULATOR_ACT8846)
-       if(pmic_is_act8846())
-       board_pmu_act8846_resume(); 
+        #if defined (CONFIG_REGULATOR_ACT8846) || defined (CONFIG_REGULATOR_ACT8846_MODULE)
+        if(pmic_is_act8846())
+                board_pmu_act8846_resume(); 
 	#endif
-	#if defined (CONFIG_MFD_WM831X_I2C)
-       if(pmic_is_wm8326())
-       board_pmu_wm8326_resume();
+	#if defined (CONFIG_MFD_WM831X_I2C) || defined (CONFIG_MFD_WM831X_I2C_MODULE)
+        if(pmic_is_wm8326())
+                board_pmu_wm8326_resume();
 	#endif
-	#if defined (CONFIG_MFD_TPS65910)
-       if(pmic_is_tps65910())
-       board_pmu_tps65910_resume(); 
+	#if defined (CONFIG_MFD_TPS65910) || defined (CONFIG_MFD_TPS65910_MODULE)
+        if(pmic_is_tps65910())
+                board_pmu_tps65910_resume(); 
 	#endif
 }
 
@@ -1633,9 +1644,9 @@ void  rk30_pwm_resume_voltage_set(void)
 #endif
 }
 
-#ifdef CONFIG_I2C2_RK30
+#if defined(CONFIG_I2C2_RK30) || defined(CONFIG_I2C2_RK30_MODULE)
 static struct i2c_board_info __initdata i2c2_info[] = {
-#if defined(CONFIG_IT66121)
+#if defined(CONFIG_IT66121) || defined(CONFIG_IT66121_MODULE)
 	{
 		.type		= "it66121",
 		.addr		= 0x4c,
@@ -1644,7 +1655,7 @@ static struct i2c_board_info __initdata i2c2_info[] = {
 		.platform_data 	= &hdmi_data, 
 	},
 #endif
-#if defined(CONFIG_HDMI_CAT66121)
+#if defined(CONFIG_HDMI_CAT66121) || defined(CONFIG_HDMI_CAT66121_MODULE)
 	{
 		.type		= "cat66121_hdmi",
 		.addr		= 0x4c,
@@ -1656,13 +1667,13 @@ static struct i2c_board_info __initdata i2c2_info[] = {
 
 };
 #endif  // CONFIG_I2C2_RK30
-#ifdef CONFIG_I2C3_RK30
+#if defined(CONFIG_I2C3_RK30) || defined(CONFIG_I2C3_RK30_MODULE)
 static struct i2c_board_info __initdata i2c3_info[] = {
 };
 #endif
-#ifdef CONFIG_I2C4_RK30
+#if defined(CONFIG_I2C4_RK30) || defined(CONFIG_I2C4_RK30_MODULE)
 static struct i2c_board_info __initdata i2c4_info[] = {
-#ifdef CONFIG_MFD_RK610
+#if defined(CONFIG_MFD_RK610) || defined(CONFIG_MFD_RK610_MODULE)
 		{
 			.type			= "rk610_ctl",
 			.addr			= 0x40,
@@ -1693,14 +1704,14 @@ static struct i2c_board_info __initdata i2c4_info[] = {
 		},
 #endif
 #endif
-#if defined (CONFIG_MFD_RK1000)
+#if defined(CONFIG_MFD_RK1000) || defined(CONFIG_MFD_RK1000_MODULE)
 	{
 		.type			= "rk1000_control",
 		.addr			= 0x40,
 		.flags			= 0,
 		.platform_data = &tv_data,
 	},
-#ifdef CONFIG_RK1000_TVOUT
+#if defined(CONFIG_RK1000_TVOUT) || defined(CONFIG_RK1000_TVOUT_MODULE)
     {
 		.type           = "rk1000_tvout",
 		.addr           = 0x42,
@@ -1708,7 +1719,7 @@ static struct i2c_board_info __initdata i2c4_info[] = {
 		.platform_data = &tv_data,
     },
 #endif
-#ifdef CONFIG_SND_SOC_RK1000
+#if defined(CONFIG_SND_SOC_RK1000) || defined(CONFIG_SND_SOC_RK1000_MODULE)
     {
 		.type           = "rk1000_i2c_codec",
 		.addr           = 0x60,
@@ -1717,7 +1728,7 @@ static struct i2c_board_info __initdata i2c4_info[] = {
     },
 #endif
 #endif
-#if defined (CONFIG_SND_SOC_RT5616)
+#if defined(CONFIG_SND_SOC_RT5616) || defined(CONFIG_SND_SOC_RT5616_MODULE)
 	{
 		.type           = "rt5616",
 		.addr           = 0x1b,
@@ -1727,7 +1738,7 @@ static struct i2c_board_info __initdata i2c4_info[] = {
 };
 #endif
 
-#ifdef CONFIG_I2C_GPIO_RK30
+#if defined(CONFIG_I2C_GPIO_RK30) || defined(CONFIG_I2C_GPIO_RK30_MODULE)
 #define I2C_SDA_PIN     INVALID_GPIO// RK30_PIN2_PD6   //set sda_pin here
 #define I2C_SCL_PIN     INVALID_GPIO//RK30_PIN2_PD7   //set scl_pin here
 static int rk30_i2c_io_init(void)
@@ -1752,22 +1763,22 @@ static struct i2c_board_info __initdata i2c_gpio_info[] = {
 
 static void __init rk30_i2c_register_board_info(void)
 {
-#ifdef CONFIG_I2C0_RK30
+#if defined(CONFIG_I2C0_RK30) || defined(CONFIG_I2C0_RK30_MODULE)
 	i2c_register_board_info(0, i2c0_info, ARRAY_SIZE(i2c0_info));
 #endif
-#ifdef CONFIG_I2C1_RK30
+#if defined(CONFIG_I2C1_RK30) || defined(CONFIG_I2C1_RK30_MODULE)
 	i2c_register_board_info(1, i2c1_info, ARRAY_SIZE(i2c1_info));
 #endif
-#ifdef CONFIG_I2C2_RK30
+#if defined(CONFIG_I2C2_RK30) || defined(CONFIG_I2C2_RK30_MODULE)
 	i2c_register_board_info(2, i2c2_info, ARRAY_SIZE(i2c2_info));
 #endif
-#ifdef CONFIG_I2C3_RK30
+#if defined(CONFIG_I2C3_RK30) || defined(CONFIG_I2C3_RK30_MODULE)
 	i2c_register_board_info(3, i2c3_info, ARRAY_SIZE(i2c3_info));
 #endif
-#ifdef CONFIG_I2C4_RK30
+#if defined(CONFIG_I2C4_RK30) || defined(CONFIG_I2C4_RK30_MODULE)
 	i2c_register_board_info(4, i2c4_info, ARRAY_SIZE(i2c4_info));
 #endif
-#ifdef CONFIG_I2C_GPIO_RK30
+#if defined(CONFIG_I2C_GPIO_RK30) || defined(CONFIG_I2C_GPIO_RK30_MODULE)
 	i2c_register_board_info(5, i2c_gpio_info, ARRAY_SIZE(i2c_gpio_info));
 #endif
 }
@@ -1781,7 +1792,7 @@ static void rk30_pm_power_off(void)
 	wm831x_set_bits(Wm831x,WM831X_GPIO_LEVEL,0x0001,0x0000);  //set sys_pwr 0
 	wm831x_device_shutdown(Wm831x);//wm8326 shutdown
 #endif
-#if defined(CONFIG_REGULATOR_ACT8846)
+#if defined(CONFIG_REGULATOR_ACT8846) || defined(CONFIG_REGULATOR_ACT8846_MODULE)
 	if (pmic_is_act8846()) {
 		printk("enter dcdet===========\n");
 		if(gpio_get_value (RK30_PIN0_PB2) == GPIO_LOW)
@@ -1840,6 +1851,8 @@ static void __init machine_rk30_board_init(void)
 static void __init rk30_reserve(void)
 {
 	int size, ion_reserve_size;
+#if 0
+/* it can be done dynamically */
 #if defined(CONFIG_ARCH_RK3188)
 	/*if lcd resolution great than or equal to 1920*1200,reserve the ump memory */
 	if(!(get_fb_size() < ALIGN(HD_SCREEN_SIZE,SZ_1M)))
@@ -1858,6 +1871,7 @@ static void __init rk30_reserve(void)
 */
 	}
 #endif
+#endif
 #ifdef CONFIG_ION
 	size = ddr_get_cap() >> 20;
 	if(size >= 1024) { // DDR >= 1G, set ion to 120M
@@ -1872,7 +1886,7 @@ static void __init rk30_reserve(void)
 	//rk30_ion_pdata.heaps[0].base = board_mem_reserve_add("ion", ION_RESERVE_SIZE);
 	rk30_ion_pdata.heaps[0].base = board_mem_reserve_add("ion", ion_reserve_size);
 #endif
-#ifdef CONFIG_FB_ROCKCHIP
+#if defined(CONFIG_FB_ROCKCHIP) || defined(CONFIG_FB_ROCKCHIP_MODULE)
 	resource_fb[0].start = board_mem_reserve_add("fb0 buf", get_fb_size());
 	resource_fb[0].end = resource_fb[0].start + get_fb_size()- 1;
 #ifdef OMEGAMOON_CHANGED
