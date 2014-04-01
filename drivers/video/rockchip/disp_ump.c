@@ -26,44 +26,6 @@
 #include <asm/uaccess.h>
 
 #include "dbgdefs.h"
-#if 0
-static int _disp_get_ump_secure_id(struct fb_info *info, unsigned long arg, int nbuf)
-{
-    u32 __user *psecureid = (u32 __user *) arg;
-    void __user *argp = (void __user *)arg;
-    int buf_len = FB_MAXPGSIZE;
-//    int bpp = (info->var.bits_per_pixel >> 3); //bytes per pixel
-//    int buf_len = info->var.xres * info->var.yres * bpp;
-//    u32 uoffs = 0;
-    ump_secure_id secure_id;
-    struct rk_fb_inf *g_fbi = dev_get_drvdata(info->device);
-//Galland substituted for 2 lines below: int layer_id = get_fb_layer_id(&info->fix);
-    struct rk_lcdc_device_driver * dev_drv = (struct rk_lcdc_device_driver * )info->par;
-    int layer_id = dev_drv->fb_get_layer(dev_drv,info->fix.id);
-
-//printk("\nUMP: ENTER   num_fb:%d  num_buf:%d  buf_adr:%x buf_len:%x",layer_id,nbuf,info->fix.smem_start,buf_len);
-//	if (!(info->var.yres * 2 <= info->var.yres_virtual))//IAM
-//	    printk("\nUMP: Double-buffering not enabled");
-//	else
-
-    if (!g_fbi->ump_wrapped_buffer[layer_id][nbuf]) {
-	ump_dd_physical_block ump_memory_description;
-
-	ump_memory_description.addr = info->fix.smem_start;
-	ump_memory_description.size = buf_len;
-	if (nbuf > 0) {
-	    ump_memory_description.addr += (buf_len * nbuf);
-        }
-
-	printk("\nUMP: nbuf:%d, addr:%X, size:%X\n",nbuf, ump_memory_description.addr,ump_memory_description.size);
-	g_fbi->ump_wrapped_buffer[layer_id][nbuf] =
-	    ump_dd_handle_create_from_phys_blocks(&ump_memory_description, 1);
-    }
-    secure_id = ump_dd_secure_id_get(g_fbi-> ump_wrapped_buffer[layer_id][nbuf]);
-//printk("UMP: secure_id:%X, arg:%X",secure_id,arg);
-    return put_user((unsigned int)secure_id, psecureid);
-}
-#endif
 
 static int _disp_get_ump_secure_id(struct fb_info *info, struct rk_fb_inf *g_fbi,
 				   unsigned long arg, int buf)
@@ -73,9 +35,9 @@ static int _disp_get_ump_secure_id(struct fb_info *info, struct rk_fb_inf *g_fbi
 
 	struct rk_lcdc_device_driver * dev_drv = (struct rk_lcdc_device_driver * )info->par;
 	int layer_id = dev_drv->fb_get_layer(dev_drv,info->fix.id);
-//	int layer_id=info->node;
+	int layer_id2=info->node;
 
-	DBG_PRINT("info=%p, g_fbi=%p, arg=%p, buf=%d",info,g_fbi,psecureid,buf);
+	DBG_PRINT("info=%p, g_fbi=%p, arg=%p, buf=%d, layer_id=%d, layer_id2=%d",info,g_fbi,psecureid,buf);
 
 	if (!g_fbi->ump_wrapped_buffer[layer_id][buf]) {
 		ump_dd_physical_block ump_memory_description;
