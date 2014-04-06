@@ -1,5 +1,3 @@
-/*$_FOR_ROCKCHIP_RBOX_$*/
-/*$_rbox_$_modify_$_huangzhibao for spdif output*/
 
 /* sound/soc/rockchip/spdif.c
  *
@@ -407,10 +405,10 @@ static __devinit int spdif_probe(struct platform_device *pdev)
 	spdif_stereo_out.channel = dma_res->start;
 
 	spdif->dma_playback = &spdif_stereo_out;
-#ifdef CONFIG_SND_I2S_DMA_EVENT_STATIC
+//Audio:Spdif: fix spdif dma not set when there is no i2s probe.[rm CONFIG_SND_I2S_DMA_EVENT_STATIC]
+#if 1//def CONFIG_SND_I2S_DMA_EVENT_STATIC
 	WARN_ON(rk29_dma_request(spdif_stereo_out.channel, spdif_stereo_out.client, NULL));
 #endif
-
 	RK_SPDIF_DBG("spdif:spdif probe ok!\n");
 	
 	return 0;

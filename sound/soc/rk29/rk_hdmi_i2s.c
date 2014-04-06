@@ -147,7 +147,7 @@ static void __exit audio_card_exit(void)
 	platform_device_unregister(hdmi_i2s_snd_device);
 }
 
-module_init(audio_card_init);
+late_initcall(audio_card_init);
 module_exit(audio_card_exit);
 /* Module information */
 MODULE_AUTHOR("rockchip");

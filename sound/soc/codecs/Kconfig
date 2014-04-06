@@ -80,12 +80,16 @@ config SND_SOC_ALL_CODECS
 	select SND_SOC_WM8900 if I2C
 	select SND_SOC_RT5621 if I2C
 	select SND_SOC_RT5631 if I2C
+	select SND_SOC_AK4396 if SPI_MASTER
 	select SND_SOC_RT5631_PHONE if I2C
 	select SND_SOC_RT5625 if I2C
+	select SND_SOC_RT5640 if I2C
 	select SND_SOC_RT3261 if I2C
 	select SND_SOC_RT3224 if I2C
 	select SND_SOC_RT5623 if I2C
+	select SND_SOC_RT5639 if I2C
 	select SND_SOC_RT5616 if I2C
+	select SND_SOC_RT5512 if I2C
 	select SND_SOC_RK610 if I2C
 	select SND_SOC_RK616 if I2C
 	select SND_SOC_WM8903 if I2C
@@ -111,6 +115,7 @@ config SND_SOC_ALL_CODECS
 	select SND_SOC_WM9705 if SND_SOC_AC97_BUS
 	select SND_SOC_WM9712 if SND_SOC_AC97_BUS
 	select SND_SOC_WM9713 if SND_SOC_AC97_BUS
+	select SND_SOC_CX2070X if SND_SOC_I2C_AND_SPI
         help
           Normally ASoC codec drivers are only built if a machine driver which
           uses them is also built since they are only usable with a machine
@@ -340,7 +345,13 @@ config SND_SOC_RT5621
 config SND_SOC_RT5623
 	tristate
 
+config SND_SOC_RT5639
+	tristate
+	
 config SND_SOC_RT5616
+	tristate
+
+config SND_SOC_AK4396
 	tristate
 	
 config SND_SOC_RT5631
@@ -350,6 +361,10 @@ config SND_SOC_RT5631_PHONE
 	tristate
 	
 config SND_SOC_RT5625
+	tristate
+
+config SND_SOC_RT5640
+	select SND_HWDEP
 	tristate
 
 config SND_SOC_RT3224
@@ -457,7 +472,16 @@ config SND_SOC_WM9090
 config SND_SOC_RK2928
 	tristate
 	depends on ARCH_RK2928
-	
+
 config SND_SOC_RK3026
 	tristate
 	depends on ARCH_RK3026
+
+config SND_SOC_RK3190
+	tristate
+	#depends on ARCH_RK3190
+
+config SND_SOC_RT5512
+       tristate
+config SND_SOC_CX2070X
+       tristate	

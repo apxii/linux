@@ -37,7 +37,7 @@
 
 #include "rk29_pcm.h"
 #include "rk29_i2s.h"
-
+#include "../../../drivers/video/rockchip/hdmi/rk_hdmi.h"
 #define ANDROID_REC
 #if 0
 #define I2S_DBG(x...) printk(KERN_INFO x)
@@ -56,6 +56,7 @@ struct rk29_i2s_info {
 	u32     feature;
 
 	struct clk	*iis_clk;
+    struct clk  *iis_clk_out;
 	struct clk	*iis_pclk;
 
 	unsigned char   master;
@@ -93,7 +94,7 @@ static struct rk29_i2s_info rk29_i2s[MAX_I2S];
 struct snd_soc_dai_driver rk29_i2s_dai[MAX_I2S];
 EXPORT_SYMBOL_GPL(rk29_i2s_dai);
 #if defined (CONFIG_RK_HDMI) && defined (CONFIG_SND_RK_SOC_HDMI_I2S)
-extern int hdmi_get_hotplug(void);
+//extern int hdmi_get_hotplug(void);
 #endif
 /* 
  *Turn on or off the transmission path. 
@@ -129,9 +130,9 @@ static void rockchip_snd_txctrl(struct rk29_i2s_info *i2s, int on)
 		I2S_DBG("rockchip_snd_txctrl: off\n");
 		opr  &= ~I2S_TRAN_DMA_ENABLE;        
 		writel(opr, &(pheadi2s->I2S_DMACR));  
-		if(!i2s->i2s_tx_status && !i2s->i2s_rx_status//sync stop i2s rx tx lcrk
+		if(0/*!i2s->i2s_tx_status && !i2s->i2s_rx_status*///sync stop i2s rx tx lcrk
 #if defined (CONFIG_RK_HDMI) && defined (CONFIG_SND_RK_SOC_HDMI_I2S)
-			&& 	hdmi_get_hotplug() == 0	//HDMI_HPD_REMOVED
+//			&& 	hdmi_get_hotplug() == 0	//HDMI_HPD_REMOVED
 #endif			
 		)
 		{
@@ -185,9 +186,9 @@ static void rockchip_snd_rxctrl(struct rk29_i2s_info *i2s, int on)
 		I2S_DBG("rockchip_snd_rxctrl: off\n");
 		opr  &= ~I2S_RECE_DMA_ENABLE;
 		writel(opr, &(pheadi2s->I2S_DMACR));		
-		if(!i2s->i2s_tx_status && !i2s->i2s_rx_status	//sync stop i2s rx tx lcrk
+		if(0/*!i2s->i2s_tx_status && !i2s->i2s_rx_status*/	//sync stop i2s rx tx lcrk
 #if defined (CONFIG_RK_HDMI) && defined (CONFIG_SND_RK_SOC_HDMI_I2S)
-			&& 	hdmi_get_hotplug() == 0	//HDMI_HPD_REMOVED
+//			&& 	hdmi_get_hotplug() == 0	//HDMI_HPD_REMOVED
 #endif			
 		)
 		{		
@@ -261,7 +262,23 @@ static int rockchip_i2s_set_fmt(struct snd_soc_dai *cpu_dai,
     spin_unlock(&i2s->spinlock_wr);
 	return 0;
 }
+static int SR2FS(int samplerate){
 
+	switch(samplerate){
+        case 32000:return HDMI_AUDIO_FS_32000;
+        case 44100:return HDMI_AUDIO_FS_44100;
+        case 48000:return HDMI_AUDIO_FS_48000;
+        case 88200:return HDMI_AUDIO_FS_88200;
+        case 96000:return HDMI_AUDIO_FS_96000;
+        case 176400:return HDMI_AUDIO_FS_176400;
+        case 192000:return HDMI_AUDIO_FS_192000;
+
+        default:{
+            printk(KERN_ERR "SR2FS %d unsupport.", samplerate);
+            return HDMI_AUDIO_FS_44100;
+        }
+    }
+}
 static int rockchip_i2s_hw_params(struct snd_pcm_substream *substream,
 				struct snd_pcm_hw_params *params, struct snd_soc_dai *socdai)
 {
@@ -269,7 +286,8 @@ static int rockchip_i2s_hw_params(struct snd_pcm_substream *substream,
 	u32 iismod;
 	u32 dmarc;
 	u32 iis_ckr_value;//clock generation register
-		
+	struct hdmi_audio hdmi_audio_cfg;
+	
 	I2S_DBG("Enter %s, %d >>>>>>>>>>>\n", __func__, __LINE__);
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
@@ -299,7 +317,34 @@ static int rockchip_i2s_hw_params(struct snd_pcm_substream *substream,
 			iismod |= I2S_DATA_WIDTH(31);
 			break;
 	}
-	
+    iismod &= ~CHANNLE_4_EN;
+	switch (params_channels(params)) {
+		case 8:
+			iismod |= CHANNLE_4_EN;
+			break;
+		case 6:
+			iismod |= CHANNEL_3_EN;
+			break;
+		case 4:
+			iismod |= CHANNEL_2_EN;
+			break;
+		case 2:
+			iismod |= CHANNEL_1_EN;
+			break;
+		default:
+			I2S_DBG("%d channels not supported\n", params_channels(params));
+			return -EINVAL;
+	}
+    //set hdmi codec params
+    if(HW_PARAMS_FLAG_NLPCM == params->flags)
+        hdmi_audio_cfg.type = HDMI_AUDIO_NLPCM;
+    else
+        hdmi_audio_cfg.type = HDMI_AUDIO_LPCM;
+    //printk("i2s: hdmi_audio_cfg.type: %d\n", hdmi_audio_cfg.type);
+    hdmi_audio_cfg.channel = params_channels(params);
+    hdmi_audio_cfg.rate = SR2FS(params_rate(params));
+    hdmi_audio_cfg.word_length = HDMI_AUDIO_WORD_LENGTH_16bit;
+	hdmi_config_audio(&hdmi_audio_cfg);
 	iis_ckr_value = readl(&(pheadi2s->I2S_CKR));
 	#if defined (CONFIG_SND_RK29_CODEC_SOC_SLAVE) 
 	iis_ckr_value &= ~I2S_SLAVE_MODE;
@@ -472,6 +517,18 @@ static int i2s_set_gpio_mode(struct snd_soc_dai *dai)
         #endif
         break;
 #endif
+#if defined(CONFIG_ARCH_RK319X)
+        case 1:
+        #if 1
+            iomux_set_gpio_mode(iomux_mode_to_gpio(I2S0_MCLK));
+            iomux_set_gpio_mode(iomux_mode_to_gpio(I2S0_SCLK));
+            iomux_set_gpio_mode(iomux_mode_to_gpio(I2S0_LRCKRX));
+            iomux_set_gpio_mode(iomux_mode_to_gpio(I2S0_LRCKTX));
+            iomux_set_gpio_mode(iomux_mode_to_gpio(I2S0_SDI));
+            iomux_set_gpio_mode(iomux_mode_to_gpio(I2S0_SDO));
+        #endif
+        break;
+#endif
         default:
             I2S_DBG("Enter:%s, %d, Error For DevId!!!", __FUNCTION__, __LINE__);
             return -EINVAL;
@@ -537,6 +594,18 @@ static int rockchip_i2s_dai_probe(struct snd_soc_dai *dai)
         #endif
 		break;
 #endif
+#if defined(CONFIG_ARCH_RK319X)
+        case 1:
+        #if 1         
+            iomux_set(I2S0_MCLK);
+            iomux_set(I2S0_SCLK);
+            iomux_set(I2S0_LRCKRX);
+            iomux_set(I2S0_LRCKTX);
+            iomux_set(I2S0_SDI);
+            iomux_set(I2S0_SDO);
+        #endif
+        break;
+#endif
         default:
             I2S_DBG("Enter:%s, %d, Error For DevId!!!", __FUNCTION__, __LINE__);
             return -EINVAL;
@@ -549,14 +618,14 @@ int rockchip_i2s_suspend(struct snd_soc_dai *cpu_dai)
 {
 	I2S_DBG("Enter::%s----%d\n",__FUNCTION__,__LINE__);
 //	clk_disable(clk);
-	return 0;
+	return i2s_set_gpio_mode(cpu_dai);
 }
 
 int rockchip_i2s_resume(struct snd_soc_dai *cpu_dai)
 {
 	I2S_DBG("Enter::%s----%d\n",__FUNCTION__,__LINE__);
 //	clk_enable(clk);
-	return 0;
+	return rockchip_i2s_dai_probe(cpu_dai);
 }
 #else
 #define rockchip_i2s_suspend NULL
@@ -688,7 +757,7 @@ static int __devinit rockchip_i2s_probe(struct platform_device *pdev)
 		SNDRV_PCM_FMTBIT_S24_LE| SNDRV_PCM_FMTBIT_S32_LE;
 	dai->capture.channels_min = 2;
 	dai->capture.channels_max = 2;
-	dai->capture.rates = ROCKCHIP_I2S_RATES;
+	dai->capture.rates = SNDRV_PCM_RATE_44100;//ROCKCHIP_I2S_RATES;
 	dai->capture.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S20_3LE | SNDRV_PCM_FMTBIT_S24_LE;
 	dai->probe = rockchip_i2s_dai_probe; 
 	dai->ops = &rockchip_i2s_dai_ops;
@@ -736,6 +805,14 @@ static int __devinit rockchip_i2s_probe(struct platform_device *pdev)
 		i2s->dma_playback->dma_addr = RK2928_I2S_PHYS + I2S_TXR_BUFF;		
 		break;
 #endif
+#if defined(CONFIG_ARCH_RK319X)
+    case 1:
+        i2s->dma_capture->channel = DMACH_I2S1_2CH_RX;
+		i2s->dma_capture->dma_addr = RK319X_I2S1_2CH_PHYS + I2S_RXR_BUFF;
+		i2s->dma_playback->channel = DMACH_I2S1_2CH_TX;
+		i2s->dma_playback->dma_addr = RK319X_I2S1_2CH_PHYS + I2S_TXR_BUFF;
+		break;
+#endif        
 	}
 
 	i2s->dma_capture->client = &rk29_dma_client_in;
@@ -760,7 +837,21 @@ static int __devinit rockchip_i2s_probe(struct platform_device *pdev)
 	}
 
 	clk_enable(i2s->iis_clk);
-	clk_set_rate(i2s->iis_clk, 11289600);
+
+	//clk_set_rate(i2s->iis_clk, 11289600);
+
+
+#if defined(CONFIG_ARCH_RK319X)
+    i2s->iis_clk_out = clk_get(&pdev->dev, "i2s_mclk");
+    I2S_DBG("Enter:%s, %d, iis_clk_out=%p\n", __FUNCTION__, __LINE__, i2s->iis_clk_out);
+        if (IS_ERR(i2s->iis_clk_out)) {
+            dev_err(&pdev->dev, "failed to get i2s clk out\n");
+            ret = PTR_ERR(i2s->iis_clk_out);
+            goto err;
+        }
+    clk_enable(i2s->iis_clk_out);
+    clk_set_rate(i2s->iis_clk_out, 11289600);
+#endif
 
 	ret = rk29_i2s_probe(pdev, dai, i2s, 0);
 	if (ret)
@@ -835,3 +926,4 @@ module_exit(rockchip_i2s_exit);
 MODULE_AUTHOR("rockchip");
 MODULE_DESCRIPTION("ROCKCHIP IIS ASoC Interface");
 MODULE_LICENSE("GPL");
+

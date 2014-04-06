@@ -443,7 +443,7 @@ static int rk610_codec_set_dai_fmt(struct snd_soc_dai *codec_dai,
 
 //modify 2013-06-27
 	if(rk610_codec->pa_enable_time<300)
-	spk_ctrl_fun(GPIO_LOW);
+		spk_ctrl_fun(GPIO_LOW);
 	else
 		spk_ctrl_fun(GPIO_HIGH);
 	rk610_codec_write(codec,ACCELCODEC_R1D, 0x2a);  //setup Vmid and Vref, other module power down
@@ -583,7 +583,7 @@ static int rk610_codec_mute(struct snd_soc_dai *dai, int mute)
 		rk610_codec_write(codec,ACCELCODEC_R19, 0x7F);  //AOM
 
 		if(rk610_codec->pa_enable_time == 0)
-		msleep(300);
+			msleep(300);
 		#if OUT_CAPLESS
     	rk610_codec_write(codec,ACCELCODEC_R1F, 0x09|ASC_PDMIXM_ENABLE);
     	#else
@@ -593,7 +593,7 @@ static int rk610_codec_mute(struct snd_soc_dai *dai, int mute)
 	//	rk610_codec_reg_read();
 		if(rk610_codec->hdmi_ndet)
 			if(rk610_codec->pa_enable_time == 0 )
-			spk_ctrl_fun(GPIO_HIGH);
+				spk_ctrl_fun(GPIO_HIGH);
 			else if(rk610_codec->pa_enable_time > 0 && rk610_codec->pa_enable_time < 300){
 				spk_ctrl_fun(GPIO_HIGH);
 				msleep(rk610_codec->pa_enable_time)	;
@@ -942,7 +942,7 @@ static ssize_t RK610_PROC_write(struct file *file, const char __user *buffer,
 	int reg;
 	int value;
 	struct rk610_codec_priv *rk610_codec = snd_soc_codec_get_drvdata(rk610_codec_codec);
-	
+
 	cookie_pot = (char *)vmalloc( len );
 	if (!cookie_pot) 
 	{

@@ -1,8 +1,7 @@
-/* $_FOR_ROCKCHIP_RBOX_$ */
 /*
  * rk29_rk1000_codec.c  --  SoC audio for rockchip
  *
- * Driver for rockchip wm8988 audio
+ * Driver for rockchip rk1000 audio
  *
  *  This program is free software; you can redistribute  it and/or modify it
  *  under  the terms of  the GNU General  Public License as published by the
@@ -232,14 +231,16 @@ static struct snd_soc_dai_link rk29_dai = {
 	.codec_name = "RK1000_CODEC.2-0060",
 #elif defined(CONFIG_ARCH_RK3188)
 	.codec_name = "RK1000_CODEC.4-0060",
+#elif defined(CONFIG_ARCH_RK3026)
+	.codec_name = "RK1000_CODEC.1-0060",
 #endif
 	.platform_name = "rockchip-audio",
 #if defined(CONFIG_SND_RK29_SOC_I2S_8CH)	
 	.cpu_dai_name = "rk29_i2s.0",
 #elif defined(CONFIG_SND_RK29_SOC_I2S_2CH)
 	.cpu_dai_name = "rk29_i2s.1",
-#else	
-	.cpu_dai_name = "rk29_i2s.2",	
+#else
+	.cpu_dai_name = "rk29_i2s.2",
 #endif
 	.codec_dai_name = "rk1000_codec",
 	.init = rk29_rk1000_codec_init,

@@ -1,3 +1,4 @@
+
 config SND_RK29_SOC
 	tristate "SoC Audio for the Rockchip System-on-Chip"
 	depends on PLAT_RK && SND_SOC
@@ -15,7 +16,7 @@ config SND_RK_SOC_SPDIF
 config SND_RK29_SOC_I2S_8CH
 	bool "Soc RK29 I2S 8 Channel support(I2S0)"
 	default y
-	depends on SND_RK29_SOC_I2S && !ARCH_RK3066B && !ARCH_RK3188
+	depends on SND_RK29_SOC_I2S && !ARCH_RK3066B && !ARCH_RK3188 && !ARCH_RK319X
 	help
        This supports the use of the 8 Channel I2S interface on rk29 processors.
 				
@@ -71,10 +72,10 @@ endif
 
 if SND_RK29_SOC && RK_HDMI
 choice
-  tristate "Set audio support for HDMI"
+  bool "Set audio support for HDMI"
   default SND_RK_SOC_HDMI_I2S
 	config SND_RK_SOC_HDMI_I2S
-		depends on !RK616_USE_MCLK_12M || !SND_RK_SOC_RK616
+		depends on (!RK616_USE_MCLK_12M || !SND_RK_SOC_RK616) && !SND_RK29_SOC_RK1000
 		select SND_RK29_SOC_I2S
 		select SND_SOC_HDMI_I2S
 		tristate  "HDMI use I2S"
@@ -86,6 +87,24 @@ choice
 		tristate  "HDMI use SPDIF"
 endchoice
 endif
+
+config SND_RK_SOC_SPDIF_CARD
+	tristate "SoC Spdif Audio support for rockchip"
+	depends on SND_RK29_SOC && !SND_RK_SOC_HDMI_SPDIF
+	select SND_RK_SOC_SPDIF
+	select SND_SOC_HDMI_SPDIF
+	help
+	  Say Y if you want to add support for SoC audio on rockchip
+	  with the spdif.
+
+config SND_RK29_SOC_AK4396
+	tristate "SoC I2S Audio support for rockchip - AK4396"
+	depends on SND_RK29_SOC
+	select SND_RK29_SOC_I2S
+	select SND_SOC_AK4396
+	help
+	  Say Y if you want to add support for SoC audio on rockchip
+	  with the AK4396.
 
 config SND_RK29_SOC_ES8323
 	tristate "SoC I2S Audio support for rockchip - ES8323"
@@ -120,6 +139,23 @@ config SND_RK29_SOC_WM8900
 	help
 	  Say Y if you want to add support for SoC audio on rockchip
 	  with the WM8900.
+
+config SND_RK29_SOC_RT5512
+	tristate "SoC I2S Audio support for rockchip - RICHTEK5512"
+	depends on SND_RK29_SOC
+	select SND_SOC_RT5512
+	select SND_RK29_SOC_I2S
+	help
+	  Say Y if you want to add support for SoC audio on the rockchip.
+
+config SND_RK29_SOC_CX2070X
+	tristate "SoC I2S Audio support for rockchip - CX2070X"
+	depends on SND_RK29_SOC
+	select SND_SOC_CX2070X
+	select SND_RK29_SOC_I2S
+	help
+	  Say Y if you want to add support for SoC audio on the rockchip.
+
 config SND_RK29_SOC_RT5621
 	tristate "SoC I2S Audio support for rockchip - rt5621"
 	depends on SND_RK29_SOC
@@ -136,6 +172,7 @@ config SND_RK29_SOC_RT5623
 	help
 	  Say Y if you want to add support for SoC audio on rockchip
 	  with the rt5623.
+
 config SND_RK29_SOC_RT5631
 	tristate "SoC I2S Audio support for rockchip - RT5631"
 	depends on SND_RK29_SOC
@@ -180,6 +217,14 @@ choice
 	  if your codec output hardware connect is spk from spkout, choose it
 endchoice
 
+config SND_RK29_SOC_RT5640
+	tristate "SoC I2S Audio support for rockchip - RT5640(RT5642)"
+	depends on SND_RK29_SOC
+	select SND_RK29_SOC_I2S
+	select SND_SOC_RT5640
+	help
+	   RT5640 is pin to pin as RT5642, but not have dsp function.
+	  
 config SND_RK29_SOC_RT3224
 	tristate "SoC I2S Audio support for rockchip - RT3224"
 	depends on SND_RK29_SOC
@@ -187,6 +232,14 @@ config SND_RK29_SOC_RT3224
 	select SND_SOC_RT3224
 	help
 	  RT3224 is pin to pin as RT3261, but not have dsp function.
+	  
+config SND_RK29_SOC_RT5639
+	tristate "SoC I2S Audio support for rockchip - RT5639"
+	depends on SND_RK29_SOC
+	select SND_RK29_SOC_I2S
+	select SND_SOC_RT5639
+	help
+	  rt5639
 	  
 config SND_RK29_SOC_RT5616
 	tristate "SoC I2S Audio support for rockchip - RT5616"
@@ -288,6 +341,28 @@ config SND_RK_SOC_RK3026
 	help
 	  Say Y if you want to add support for SoC audio on rockchip
 	  with the RK3026 internal codec.
+
+if  SND_RK_SOC_RK3026
+choice
+	bool "with cap or capless"
+	default SND_CAP
+		config  SND_CAP
+		tristate "output with cap"
+		config  SND_CAPLESS
+		tristate "output capless"
+
+endchoice
+endif
+
+config SND_RK_SOC_RK3190
+	tristate "SoC I2S Audio support for rockchip - RK3190"
+	depends on SND_RK29_SOC
+	select SND_RK29_SOC_I2S
+	select SND_SOC_RK3190
+	select SND_RK29_CODEC_SOC_SLAVE
+	help
+	  Say Y if you want to add support for SoC audio on rockchip
+	  with the RK3190 internal codec.
 
 if SND_RK29_SOC_I2S_2CH || SND_RK29_SOC_I2S_8CH || SND_RK_SOC_I2S2_2CH  
 choice

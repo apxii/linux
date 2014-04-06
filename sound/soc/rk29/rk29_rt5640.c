@@ -99,8 +99,7 @@ static int rk29_hw_params(struct snd_pcm_substream *substream,
 	DBG("Enter:%s, %d, rate=%d\n", __FUNCTION__, __LINE__, params_rate(params));
 
 	/*Set the system clk for codec*/
-	snd_soc_dai_set_pll(codec_dai, 0, RT3261_PLL1_S_MCLK, pll_out, pll_out*2); //bard 8-29
-	ret = snd_soc_dai_set_sysclk(codec_dai, RT3261_SCLK_S_PLL1, pll_out*2, SND_SOC_CLOCK_IN); //bard 8-29
+	ret = snd_soc_dai_set_sysclk(codec_dai, 0, pll_out, SND_SOC_CLOCK_IN);
 	if (ret < 0)
 	{
 		DBG("rk29_hw_params_rt3261:failed to set the sysclk for codec side\n"); 
@@ -109,7 +108,7 @@ static int rk29_hw_params(struct snd_pcm_substream *substream,
 
 	snd_soc_dai_set_sysclk(cpu_dai, 0, pll_out, 0);
 	snd_soc_dai_set_clkdiv(cpu_dai, ROCKCHIP_DIV_BCLK, (pll_out/4)/params_rate(params)-1);
-	snd_soc_dai_set_clkdiv(cpu_dai, ROCKCHIP_DIV_MCLK, 3);// 256k = 48-1  3M=3
+	snd_soc_dai_set_clkdiv(cpu_dai, ROCKCHIP_DIV_MCLK, 3);
 
 	DBG("Enter:%s, %d, pll_out/4/params_rate(params) = %d \n", __FUNCTION__, __LINE__, (pll_out/4)/params_rate(params));
  
@@ -152,8 +151,9 @@ static int rt3261_voice_hw_params(struct snd_pcm_substream *substream,
 	DBG("Enter:%s, %d, rate=%d\n", __FUNCTION__, __LINE__, params_rate(params));
 
 	/*Set the system clk for codec*/
-	snd_soc_dai_set_pll(codec_dai, 0, RT3261_PLL1_S_MCLK, pll_out, pll_out*2); //bard 8-29
-	ret = snd_soc_dai_set_sysclk(codec_dai, RT3261_SCLK_S_PLL1, pll_out*2, SND_SOC_CLOCK_IN); //bard 8-29
+	snd_soc_dai_set_pll(codec_dai, 0, RT3261_PLL1_S_MCLK, pll_out, 24576000);
+
+ 	ret = snd_soc_dai_set_sysclk(codec_dai, RT3261_SCLK_S_PLL1, 24576000, SND_SOC_CLOCK_IN);
 
 
 	if (ret < 0) {
@@ -162,8 +162,8 @@ static int rt3261_voice_hw_params(struct snd_pcm_substream *substream,
 	}
 
 	snd_soc_dai_set_sysclk(cpu_dai, 0, pll_out, 0);
-	//snd_soc_dai_set_clkdiv(cpu_dai, ROCKCHIP_DIV_BCLK, (pll_out/4)/params_rate(params)-1);
-	//snd_soc_dai_set_clkdiv(cpu_dai, ROCKCHIP_DIV_MCLK, 3);
+	snd_soc_dai_set_clkdiv(cpu_dai, ROCKCHIP_DIV_BCLK, (pll_out/4)/params_rate(params)-1);
+	snd_soc_dai_set_clkdiv(cpu_dai, ROCKCHIP_DIV_MCLK, 3);
 
 	DBG("Enter:%s, %d, pll_out/4/params_rate(params) = %d \n", __FUNCTION__, __LINE__, (pll_out/4)/params_rate(params));
  
@@ -254,40 +254,36 @@ static struct snd_soc_ops rt3261_voice_ops = {
 
 static struct snd_soc_dai_link rk29_dai[] = {
 	{
-		.name = "RT3261 I2S1",
-		.stream_name = "RT3261 PCM",
-		.codec_name = "rt3261.0-001c",
+		.name = "RT5640 I2S1",
+		.stream_name = "RT5640 PCM",
+		.codec_name = "rt5640.0-001c",
 		.platform_name = "rockchip-audio",
 		#if defined(CONFIG_SND_RK29_SOC_I2S_8CH)    
-			.cpu_dai_name = "rk29_i2s.0",
+			.cpu_dai_name = "rk29_i2s.1",
 		#elif defined(CONFIG_SND_RK29_SOC_I2S_2CH)
 			.cpu_dai_name = "rk29_i2s.1",
 		#endif
-		.codec_dai_name = "rt3261-aif1",
+		.codec_dai_name = "rt5640-aif1",
 		.init = rk29_rt3261_init,
 		.ops = &rk29_ops,
 	},
 	{
-		.name = "RT3261 I2S2",
-		.stream_name = "RT3261 PCM",
-		.codec_name = "rt3261.0-001c",
+		.name = "RT5640 I2S2",
+		.stream_name = "RT5640 PCM",
+		.codec_name = "rt5640.0-001c",
 		.platform_name = "rockchip-audio",
 		#if defined(CONFIG_SND_RK29_SOC_I2S_8CH)    
-			.cpu_dai_name = "rk29_i2s.0",
+			.cpu_dai_name = "rk29_i2s.1",
 		#elif defined(CONFIG_SND_RK29_SOC_I2S_2CH)
 			.cpu_dai_name = "rk29_i2s.1",
 		#endif 
-		.codec_dai_name = "rt3261-aif2",
+		.codec_dai_name = "rt5640-aif2",
 		.ops = &rt3261_voice_ops,
 	},
 };
 
 static struct snd_soc_card snd_soc_card_rk29 = {
-#ifdef CONFIG_SND_SOC_RT3224
-	.name = "RK29_RT3224",
-#else
-	.name = "RK29_RT3261",
-#endif
+	.name = "RK29_RT5640",
 	.dai_link = rk29_dai,
 	.num_links = 2,
 };

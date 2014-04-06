@@ -24,10 +24,17 @@
 #include <sound/soc-dapm.h>
 #include <sound/initval.h>
 #include <sound/tlv.h>
+#include <linux/gpio.h>
 
 #include "rt5616.h"
 
 #define POWER_ON_MICBIAS1
+
+#define PLAYBACK_PATH_CONTROL
+
+#ifdef PLAYBACK_PATH_CONTROL
+#define SPK_CON_GPIO INVALID_GPIO
+#endif
 
 struct rt5616_init_reg {
 	u8 reg;
@@ -458,8 +465,107 @@ static int rt5616_vol_rescale_put(struct snd_kcontrol *kcontrol,
 			RT5616_R_VOL_MASK, val << mc->shift | val2);
 }
 
+#ifdef PLAYBACK_PATH_CONTROL
+enum {
+	OFF,
+	RCV,
+	SPK_PATH,
+	HP_PATH,
+	HP_NO_MIC,
+	BT,
+	SPK_HP,
+	RING_SPK,
+	RING_HP,
+	RING_HP_NO_MIC,
+	RING_SPK_HP,
+};
+
+long int playback_path = OFF;
+
+//For tiny alsa playback
+static const char *rt5616_playback_path_mode[] = {"OFF", "RCV", "SPK", "HP", "HP_NO_MIC", "BT", "SPK_HP", //0-6
+		"RING_SPK", "RING_HP", "RING_HP_NO_MIC", "RING_SPK_HP"};//7-10
+
+static const SOC_ENUM_SINGLE_DECL(rt5616_playback_path_type, 0, 0, rt5616_playback_path_mode);
+
+static int rt5616_playback_path_get(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol)
+{
+
+	printk("%s : playback_path %ld\n", __func__, playback_path);
+
+	ucontrol->value.integer.value[0] = playback_path;
+
+	return 0;
+}
+
+static int rt5616_playback_path_put(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+	long int pre_path;
+
+
+	if (playback_path == ucontrol->value.integer.value[0]){
+		printk("%s : playback_path is not changed!\n",__func__);
+		return 0;
+	}
+
+	pre_path = playback_path;
+	playback_path = ucontrol->value.integer.value[0];
+
+	printk("%s : set playback_path %ld, pre_path %ld\n", __func__,
+		playback_path, pre_path);
+
+	switch (playback_path) {
+	case OFF:
+		snd_soc_update_bits(codec, RT5616_HP_VOL,
+			RT5616_L_MUTE | RT5616_R_MUTE,
+			RT5616_L_MUTE | RT5616_R_MUTE);
+
+		if (SPK_CON_GPIO != INVALID_GPIO)
+			gpio_set_value(SPK_CON_GPIO, GPIO_LOW);
+		break;
+	case RCV:
+	case SPK_PATH:
+	case RING_SPK:
+		snd_soc_update_bits(codec, RT5616_HP_VOL,
+			RT5616_L_MUTE | RT5616_R_MUTE,
+			RT5616_L_MUTE | RT5616_R_MUTE);
+		if (SPK_CON_GPIO != INVALID_GPIO)
+			gpio_set_value(SPK_CON_GPIO, GPIO_HIGH);
+		break;
+	case HP_PATH:
+	case HP_NO_MIC:
+	case RING_HP:
+	case RING_HP_NO_MIC:
+		snd_soc_update_bits(codec, RT5616_HP_VOL,
+			RT5616_L_MUTE | RT5616_R_MUTE, 0);
+		if (SPK_CON_GPIO != INVALID_GPIO)
+			gpio_set_value(SPK_CON_GPIO, GPIO_LOW);
+		break;
+	case BT:
+		break;
+	case SPK_HP:
+	case RING_SPK_HP:
+		snd_soc_update_bits(codec, RT5616_HP_VOL,
+			RT5616_L_MUTE | RT5616_R_MUTE, 0);
+		if (SPK_CON_GPIO != INVALID_GPIO)
+			gpio_set_value(SPK_CON_GPIO, GPIO_HIGH);
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+#endif
 
 static const struct snd_kcontrol_new rt5616_snd_controls[] = {
+#ifdef PLAYBACK_PATH_CONTROL
+	SOC_ENUM_EXT("Playback Path", rt5616_playback_path_type,
+		rt5616_playback_path_get, rt5616_playback_path_put),
+#endif
 	/* Headphone Output Volume */
 	SOC_DOUBLE("HP Playback Switch", RT5616_HP_VOL,
 		RT5616_L_MUTE_SFT, RT5616_R_MUTE_SFT, 1, 1),
@@ -1547,6 +1653,12 @@ static int rt5616_probe(struct snd_soc_codec *codec)
 		return ret;
 	}
 
+#ifdef PLAYBACK_PATH_CONTROL
+	if (SPK_CON_GPIO != INVALID_GPIO) {
+		gpio_request(SPK_CON_GPIO, NULL);
+		gpio_direction_output(SPK_CON_GPIO, GPIO_LOW);
+	}
+#endif
 	return 0;
 }
 

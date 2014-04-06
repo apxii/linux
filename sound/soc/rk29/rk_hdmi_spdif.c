@@ -1,5 +1,3 @@
-/*$_FOR_ROCKCHIP_RBOX_$*/
-/*$_rbox_$_modify_$_huangzhibao for spdif output*/
 
 /*
  * smdk_spdif.c  --  S/PDIF audio for SMDK
@@ -137,8 +135,7 @@ static int __init rk_spdif_init(void)
 	ret = platform_device_add(rk_snd_spdif_dit_device);
 	if (ret)
 		goto err1;
-
-	rk_snd_spdif_device = platform_device_alloc("soc-audio", -3);
+	rk_snd_spdif_device = platform_device_alloc("soc-audio", -4);
 	if (!rk_snd_spdif_device) {
 		printk("spdif:platform_device_alloc rk_soc-audio\n");
 		ret = -ENOMEM;
@@ -176,7 +173,9 @@ static void __exit rk_spdif_exit(void)
 	platform_device_unregister(rk_snd_spdif_dit_device);
 }
 
-module_init(rk_spdif_init);
+//using late_initcall to make sure spdif is after board codec. added by zxg.
+//module_init(rk_spdif_init);
+late_initcall(rk_spdif_init);
 module_exit(rk_spdif_exit);
 
 MODULE_AUTHOR("hzb, <hzb@rock-chips.com>");

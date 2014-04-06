@@ -99,7 +99,7 @@ struct rk616_codec_priv {
 static struct rk616_codec_priv *rk616_priv = NULL;
 static struct mfd_rk616 *rk616_mfd = NULL;
 static bool rk616_for_mid = 1, is_hdmi_in = false;
-
+extern int rk616_pll_set_rate(struct mfd_rk616 *rk616,int id,u32 cfg_val,u32 frac);
 bool rk616_get_for_mid(void)
 {
 	return rk616_for_mid;
@@ -191,7 +191,7 @@ static const unsigned int rk616_reg_defaults[RK616_PGAR_AGC_CTL5 + 1] = {
 
 /* mfd registers default list */
 static struct rk616_reg_val_typ rk616_mfd_reg_defaults[] = {
-	{CRU_CODEC_DIV, 0x00000000},
+	{CRU_CODEC_DIV, 0x01885091},
 	{CRU_IO_CON0, (I2S1_OUT_DISABLE | I2S0_OUT_DISABLE | I2S1_PD_DISABLE | I2S0_PD_DISABLE) |
 		((I2S1_OUT_DISABLE | I2S0_OUT_DISABLE | I2S1_PD_DISABLE | I2S0_PD_DISABLE) << 16)},
 	{CRU_IO_CON1, (I2S1_SI_EN | I2S0_SI_EN) | ((I2S1_SI_EN | I2S0_SI_EN) << 16)},
@@ -201,7 +201,7 @@ static struct rk616_reg_val_typ rk616_mfd_reg_defaults[] = {
 
 /* mfd registers cache list */
 static struct rk616_reg_val_typ rk616_mfd_reg_cache[] = {
-	{CRU_CODEC_DIV, 0x00000000},
+	{CRU_CODEC_DIV, 0x01885091},
 	{CRU_IO_CON0, (I2S1_OUT_DISABLE | I2S0_OUT_DISABLE | I2S1_PD_DISABLE | I2S0_PD_DISABLE) |
 		((I2S1_OUT_DISABLE | I2S0_OUT_DISABLE | I2S1_PD_DISABLE | I2S0_PD_DISABLE) << 16)},
 	{CRU_IO_CON1, (I2S1_SI_EN | I2S0_SI_EN) | ((I2S1_SI_EN | I2S0_SI_EN) << 16)},
@@ -547,7 +547,7 @@ static int rk616_reset(struct snd_soc_codec *codec)
 	//bypass zero-crossing detection
 	snd_soc_write(codec, RK616_SINGNAL_ZC_CTL1, 0x3f);
 	snd_soc_write(codec, RK616_SINGNAL_ZC_CTL2, 0xff);
-
+	rk616_pll_set_rate(rk616_mfd, 1, 0x08832252 ,0x01885091);
 	return 0;
 }
 
@@ -605,7 +605,7 @@ void codec_set_spk(bool on)
 	struct snd_soc_codec *codec;
 
 	DBG("%s : %s\n", __func__, on ? "enable spk" : "disable spk");
-
+ 	is_hdmi_in = on ? 0 : 1;
 	if (!rk616 || !rk616->codec) {
 		printk("%s : rk616_priv or rk616_priv->codec is NULL\n", __func__);
 		return;
@@ -627,8 +627,11 @@ void codec_set_spk(bool on)
 		}
 		else
 		{
+			mutex_lock(&codec->mutex);
 			snd_soc_dapm_enable_pin(&codec->dapm, "Headphone Jack");
 			snd_soc_dapm_enable_pin(&codec->dapm, "Ext Spk");
+			snd_soc_dapm_sync(&codec->dapm);
+			mutex_unlock(&codec->mutex);
 		}
 	} else {
 		rk616_set_gpio(RK616_CODEC_SET_SPK | RK616_CODEC_SET_HP, GPIO_LOW);
@@ -646,13 +649,13 @@ void codec_set_spk(bool on)
 		}
 		else
 		{
+			mutex_lock(&codec->mutex);
 			snd_soc_dapm_disable_pin(&codec->dapm, "Headphone Jack");
 			snd_soc_dapm_disable_pin(&codec->dapm, "Ext Spk");
+			snd_soc_dapm_sync(&codec->dapm);
+			mutex_unlock(&codec->mutex);
 		}
 	}
-	snd_soc_dapm_sync(&codec->dapm);
-
-	is_hdmi_in = on ? 0 : 1;
 }
 #ifdef CONFIG_MACH_RK_FAC
 EXPORT_SYMBOL_GPL(rk616_codec_set_spk);
@@ -728,10 +731,10 @@ static int rk616_codec_power_up(int type)
 
 	codec = rk616->codec;
 
-	printk("%s : power up %s %s %s\n", __func__,
-		type & RK616_CODEC_PLAYBACK ? "playback" : "",
-		type & RK616_CODEC_CAPTURE ? "capture" : "",
-		type & RK616_CODEC_INCALL ? "incall" : "");
+	//printk("%s : power up %s %s %s\n", __func__,
+		//type & RK616_CODEC_PLAYBACK ? "playback" : "",
+		//type & RK616_CODEC_CAPTURE ? "capture" : "",
+		//type & RK616_CODEC_INCALL ? "incall" : "");
 
 	// mute output for pop noise
 	if ((type & RK616_CODEC_PLAYBACK) ||
@@ -1129,6 +1132,17 @@ int snd_soc_put_gpio_enum_double(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+#define SOC_DOUBLE_R_STEP_TLV(xname, reg_left, reg_right, xshift, xmax, xinvert, tlv_array) \
+{	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = (xname),\
+	.access = SNDRV_CTL_ELEM_ACCESS_TLV_READ |\
+		 SNDRV_CTL_ELEM_ACCESS_READWRITE,\
+	.tlv.p = (tlv_array), \
+	.info = snd_soc_info_volsw_2r, \
+	.get = snd_soc_get_volsw_2r, .put = snd_soc_put_step_volsw_2r, \
+	.private_value = (unsigned long)&(struct soc_mixer_control) \
+		{.reg = reg_left, .rreg = reg_right, .shift = xshift, \
+		.max = xmax, .platform_max = xmax, .invert = xinvert} }
+
 #define SOC_GPIO_ENUM(xname, xenum) \
 {	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname,\
 	.info = snd_soc_info_enum_double, \
@@ -1138,41 +1152,12 @@ int snd_soc_put_gpio_enum_double(struct snd_kcontrol *kcontrol,
 static const struct snd_kcontrol_new rk616_snd_controls[] = {
 
 	//add for incall volume setting
-	{
-	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = ("Speaker Playback Volume"),\
-	.access = SNDRV_CTL_ELEM_ACCESS_TLV_READ |\
-		 SNDRV_CTL_ELEM_ACCESS_READWRITE,\
-	.tlv.p = (out_vol_tlv), \
-	.info = snd_soc_info_volsw_2r, \
-	.get = snd_soc_get_volsw_2r, .put = snd_soc_put_step_volsw_2r, \
-	.private_value = (unsigned long)&(struct soc_mixer_control) \
-		{.reg = RK616_SPKL_CTL, .rreg = RK616_SPKR_CTL, .shift = RK616_VOL_SFT, \
-		.max = SPKOUT_VOLUME, .platform_max = SPKOUT_VOLUME, .invert = 0}
-	},
-
-	{
-	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = ("Headphone Playback Volume"),\
-	.access = SNDRV_CTL_ELEM_ACCESS_TLV_READ |\
-		 SNDRV_CTL_ELEM_ACCESS_READWRITE,\
-	.tlv.p = (out_vol_tlv), \
-	.info = snd_soc_info_volsw_2r, \
-	.get = snd_soc_get_volsw_2r, .put = snd_soc_put_step_volsw_2r, \
-	.private_value = (unsigned long)&(struct soc_mixer_control) \
-		{.reg = RK616_HPL_CTL, .rreg = RK616_HPR_CTL, .shift = RK616_VOL_SFT, \
-		.max = HPOUT_VOLUME, .platform_max = HPOUT_VOLUME, .invert = 0}
-	},
-
-	{
-	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = ("Earpiece Playback Volume"),\
-	.access = SNDRV_CTL_ELEM_ACCESS_TLV_READ |\
-		 SNDRV_CTL_ELEM_ACCESS_READWRITE,\
-	.tlv.p = (out_vol_tlv), \
-	.info = snd_soc_info_volsw_2r, \
-	.get = snd_soc_get_volsw_2r, .put = snd_soc_put_step_volsw_2r, \
-	.private_value = (unsigned long)&(struct soc_mixer_control) \
-		{.reg = RK616_SPKL_CTL, .rreg = RK616_SPKR_CTL, .shift = RK616_VOL_SFT, \
-		.max = SPKOUT_VOLUME, .platform_max = SPKOUT_VOLUME, .invert = 0}
-	},
+	SOC_DOUBLE_R_STEP_TLV("Speaker Playback Volume", RK616_SPKL_CTL,
+			RK616_SPKR_CTL, RK616_VOL_SFT, SPKOUT_VOLUME, 0, out_vol_tlv),
+	SOC_DOUBLE_R_STEP_TLV("Headphone Playback Volume", RK616_HPL_CTL,
+			RK616_HPR_CTL, RK616_VOL_SFT, HPOUT_VOLUME, 0, out_vol_tlv),
+	SOC_DOUBLE_R_STEP_TLV("Earpiece Playback Volume", RK616_SPKL_CTL,
+			RK616_SPKR_CTL, RK616_VOL_SFT, SPKOUT_VOLUME, 0, out_vol_tlv),
 
 	SOC_DOUBLE_R("Speaker Playback Switch", RK616_SPKL_CTL,
 		RK616_SPKR_CTL, RK616_MUTE_SFT, 1, 1),
@@ -1874,29 +1859,13 @@ static const struct snd_kcontrol_new rk616_snd_path_controls[] = {
 		rk616_voip_path_get, rk616_voip_path_put),
 
 	//add for incall volume setting
-	{
-	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = ("Speaker Playback Volume"),\
-	.access = SNDRV_CTL_ELEM_ACCESS_TLV_READ |\
-		 SNDRV_CTL_ELEM_ACCESS_READWRITE,\
-	.tlv.p = (out_vol_tlv), \
-	.info = snd_soc_info_volsw_2r, \
-	.get = snd_soc_get_volsw_2r, .put = snd_soc_put_step_volsw_2r, \
-	.private_value = (unsigned long)&(struct soc_mixer_control) \
-		{.reg = RK616_SPKL_CTL, .rreg = RK616_SPKR_CTL, .shift = RK616_VOL_SFT, \
-		.max = SPKOUT_VOLUME, .platform_max = SPKOUT_VOLUME, .invert = 0}
-	},
-
-	{
-	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = ("Headphone Playback Volume"),\
-	.access = SNDRV_CTL_ELEM_ACCESS_TLV_READ |\
-		 SNDRV_CTL_ELEM_ACCESS_READWRITE,\
-	.tlv.p = (out_vol_tlv), \
-	.info = snd_soc_info_volsw_2r, \
-	.get = snd_soc_get_volsw_2r, .put = snd_soc_put_step_volsw_2r, \
-	.private_value = (unsigned long)&(struct soc_mixer_control) \
-		{.reg = RK616_SPKL_CTL, .rreg = RK616_SPKR_CTL, .shift = RK616_VOL_SFT, \
-		.max = SPKOUT_VOLUME, .platform_max = SPKOUT_VOLUME, .invert = 0}
-	},
+	SOC_DOUBLE_R_STEP_TLV("Speaker Playback Volume", RK616_SPKL_CTL,
+			RK616_SPKR_CTL, RK616_VOL_SFT, SPKOUT_VOLUME, 0, out_vol_tlv),
+	SOC_DOUBLE_R_STEP_TLV("Headphone Playback Volume", RK616_SPKL_CTL,
+			RK616_SPKR_CTL, RK616_VOL_SFT, HPOUT_VOLUME, 0, out_vol_tlv),
+	//Earpiece incall volume is setting by modem
+	//SOC_DOUBLE_R_STEP_TLV("Earpiece Playback Volume", RK616_SPKL_CTL,
+			//RK616_SPKR_CTL, RK616_VOL_SFT, SPKOUT_VOLUME, 0, out_vol_tlv),
 
 	/*
 	* When modem connecting, it will make some pop noise.
@@ -2398,8 +2367,14 @@ static int rk616_set_dai_sysclk(struct snd_soc_dai *codec_dai,
 	rk616->stereo_sysclk = freq;
 
 	//set I2S mclk for mipi
-	rk616_mclk_set_rate(rk616_mfd->mclk, freq);
+	//rk616_mclk_set_rate(rk616_mfd->mclk, freq);
 
+  if(freq==12288000){
+  	rk616_pll_set_rate(rk616_mfd, 1, 0x08832252 ,0x00080177);	
+  }else if(freq==12000000){
+  	rk616_pll_set_rate(rk616_mfd, 1, 0x08832252 ,0x01880188);	
+  }
+  	
 	return 0;
 }
 
@@ -2508,10 +2483,9 @@ static int rk616_hw_params(struct snd_pcm_substream *substream,
 	// bclk = codec_clk / 4
 	// lrck = bclk / (wl * 2)
 	div = (((rk616->stereo_sysclk / 4) / rate) / 2);
-
 	if ((rk616->stereo_sysclk % (4 * rate * 2) > 0) ||
 	    (div != 16 && div != 20 && div != 24 && div != 32)) {
-		printk("%s : need PLL\n", __func__);
+		printk("%s : need PLL \n", __func__);
 		return -EINVAL;
 	}
 #else
@@ -2620,6 +2594,7 @@ static int rk616_hw_params(struct snd_pcm_substream *substream,
 	snd_soc_update_bits(codec, CRU_PCM2IS2_CON2,
 			APS_SEL | APS_CLR | I2S_CHANNEL_SEL,
 			mfd_i2s_ctl);
+	rk616_codec_power_up(RK616_CODEC_PLAYBACK);
 	return 0;
 }
 
@@ -2807,7 +2782,6 @@ static int rk616_probe(struct snd_soc_codec *codec)
 	rk616->modem_input_enable = 1;
 
 	rk616_priv = rk616;
-
 	ret = snd_soc_codec_set_cache_io(codec, 8, 16, SND_SOC_I2C);
 	if (ret != 0) {
 		printk("%s : Failed to set cache I/O: %d\n", __func__, ret);
@@ -2844,7 +2818,6 @@ static int rk616_probe(struct snd_soc_codec *codec)
 		snd_soc_dapm_add_routes(&codec->dapm, rk616_dapm_routes,
 				ARRAY_SIZE(rk616_dapm_routes));
 	}
-
 	return 0;
 
 err__:
