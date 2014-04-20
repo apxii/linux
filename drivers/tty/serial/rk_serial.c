@@ -153,8 +153,10 @@ static void dbg(const char *fmt, ...)
 	va_start(va, fmt);
 	vsprintf(buff, fmt, va);
 	va_end(va);
-
+#ifdef CONFIG_DEBUG_LL
 	printascii(buff);
+#endif
+
 }
 
 //enable log output
