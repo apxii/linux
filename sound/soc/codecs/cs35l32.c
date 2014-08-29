@@ -121,9 +121,9 @@ static bool cs35l32_volatile_register(struct device *dev, unsigned int reg)
 	case CS35L32_INT_STATUS_2:
 	case CS35L32_INT_STATUS_3:
 	case CS35L32_LED_STATUS:
-		return 1;
+		return true;
 	default:
-		return 0;
+		return false;
 	}
 }
 
@@ -134,9 +134,9 @@ static bool cs35l32_precious_register(struct device *dev, unsigned int reg)
 	case CS35L32_INT_STATUS_2:
 	case CS35L32_INT_STATUS_3:
 	case CS35L32_LED_STATUS:
-		return 1;
+		return true;
 	default:
-		return 0;
+		return false;
 	}
 }
 
@@ -242,41 +242,27 @@ static struct snd_soc_dai_driver cs35l32_dai[] = {
 static int cs35l32_codec_set_sysclk(struct snd_soc_codec *codec,
 			      int clk_id, int source, unsigned int freq, int dir)
 {
+	unsigned int val;
 
 	switch (freq) {
 	case 6000000:
-		snd_soc_update_bits(codec, CS35L32_CLK_CTL,
-				    CS35L32_MCLK_DIV2_MASK, 0);
-		snd_soc_update_bits(codec, CS35L32_CLK_CTL,
-				    CS35L32_MCLK_RATIO_MASK,
-					CS35L32_MCLK_RATIO);
+		val = CS35L32_MCLK_RATIO;
 		break;
 	case 12000000:
-		snd_soc_update_bits(codec, CS35L32_CLK_CTL,
-				    CS35L32_MCLK_DIV2_MASK,
-					CS35L32_MCLK_DIV2_MASK);
-		snd_soc_update_bits(codec, CS35L32_CLK_CTL,
-				    CS35L32_MCLK_RATIO_MASK,
-					CS35L32_MCLK_RATIO);
+		val = CS35L32_MCLK_DIV2_MASK | CS35L32_MCLK_RATIO;
 		break;
 	case 6144000:
-		snd_soc_update_bits(codec, CS35L32_CLK_CTL,
-				    CS35L32_MCLK_DIV2_MASK, 0);
-		snd_soc_update_bits(codec, CS35L32_CLK_CTL,
-				    CS35L32_MCLK_RATIO_MASK, 0);
+		val = 0;
 		break;
 	case 12288000:
-		snd_soc_update_bits(codec, CS35L32_CLK_CTL,
-				    CS35L32_MCLK_DIV2_MASK,
-					CS35L32_MCLK_DIV2_MASK);
-		snd_soc_update_bits(codec, CS35L32_CLK_CTL,
-				    CS35L32_MCLK_RATIO_MASK, 0);
+		val = CS35L32_MCLK_DIV2_MASK;
 		break;
 	default:
 		return -EINVAL;
 	}
 
-	return 0;
+	return snd_soc_update_bits(codec, CS35L32_CLK_CTL,
+			CS35L32_MCLK_DIV2_MASK | CS35L32_MCLK_RATIO_MASK, val);
 }
 
 static struct snd_soc_codec_driver soc_codec_dev_cs35l32 = {
@@ -561,8 +547,6 @@ static int cs35l32_i2c_remove(struct i2c_client *i2c_client)
 	/* Hold down reset */
 	if (cs35l32->reset_gpio)
 		gpiod_set_value_cansleep(cs35l32->reset_gpio, 0);
-
-	regulator_bulk_free(ARRAY_SIZE(cs35l32->supplies), cs35l32->supplies);
 
 	return 0;
 }
