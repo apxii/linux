@@ -764,7 +764,6 @@ struct snd_soc_component {
 	unsigned int num_dapm_widgets;
 	const struct snd_soc_dapm_route *dapm_routes;
 	unsigned int num_dapm_routes;
-	bool steal_sibling_dai_widgets;
 	struct snd_soc_codec *codec;
 
 	int (*probe)(struct snd_soc_component *);
@@ -868,14 +867,6 @@ struct snd_soc_platform_driver {
 	/* pcm creation and destruction */
 	int (*pcm_new)(struct snd_soc_pcm_runtime *);
 	void (*pcm_free)(struct snd_pcm *);
-
-	/* Default control and setup, added after probe() is run */
-	const struct snd_kcontrol_new *controls;
-	int num_controls;
-	const struct snd_soc_dapm_widget *dapm_widgets;
-	int num_dapm_widgets;
-	const struct snd_soc_dapm_route *dapm_routes;
-	int num_dapm_routes;
 
 	/*
 	 * For platform caused delay reporting.
@@ -1299,26 +1290,37 @@ static inline void *snd_soc_card_get_drvdata(struct snd_soc_card *card)
 	return card->drvdata;
 }
 
+static inline void snd_soc_component_set_drvdata(struct snd_soc_component *c,
+		void *data)
+{
+	dev_set_drvdata(c->dev, data);
+}
+
+static inline void *snd_soc_component_get_drvdata(struct snd_soc_component *c)
+{
+	return dev_get_drvdata(c->dev);
+}
+
 static inline void snd_soc_codec_set_drvdata(struct snd_soc_codec *codec,
 		void *data)
 {
-	dev_set_drvdata(codec->dev, data);
+	snd_soc_component_set_drvdata(&codec->component, data);
 }
 
 static inline void *snd_soc_codec_get_drvdata(struct snd_soc_codec *codec)
 {
-	return dev_get_drvdata(codec->dev);
+	return snd_soc_component_get_drvdata(&codec->component);
 }
 
 static inline void snd_soc_platform_set_drvdata(struct snd_soc_platform *platform,
 		void *data)
 {
-	dev_set_drvdata(platform->dev, data);
+	snd_soc_component_set_drvdata(&platform->component, data);
 }
 
 static inline void *snd_soc_platform_get_drvdata(struct snd_soc_platform *platform)
 {
-	return dev_get_drvdata(platform->dev);
+	return snd_soc_component_get_drvdata(&platform->component);
 }
 
 static inline void snd_soc_pcm_set_drvdata(struct snd_soc_pcm_runtime *rtd,
