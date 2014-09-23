@@ -1959,13 +1959,9 @@ static struct platform_driver soc_driver = {
 int snd_soc_new_ac97_codec(struct snd_soc_codec *codec,
 	struct snd_ac97_bus_ops *ops, int num)
 {
-	mutex_lock(&codec->mutex);
-
 	codec->ac97 = kzalloc(sizeof(struct snd_ac97), GFP_KERNEL);
-	if (codec->ac97 == NULL) {
-		mutex_unlock(&codec->mutex);
+	if (codec->ac97 == NULL)
 		return -ENOMEM;
-	}
 
 	codec->ac97->bus = kzalloc(sizeof(struct snd_ac97_bus), GFP_KERNEL);
 	if (codec->ac97->bus == NULL) {
@@ -1984,7 +1980,6 @@ int snd_soc_new_ac97_codec(struct snd_soc_codec *codec,
 	 */
 	codec->ac97_created = 1;
 
-	mutex_unlock(&codec->mutex);
 	return 0;
 }
 EXPORT_SYMBOL_GPL(snd_soc_new_ac97_codec);
@@ -2154,7 +2149,6 @@ EXPORT_SYMBOL_GPL(snd_soc_set_ac97_ops_of_reset);
  */
 void snd_soc_free_ac97_codec(struct snd_soc_codec *codec)
 {
-	mutex_lock(&codec->mutex);
 #ifdef CONFIG_SND_SOC_AC97_BUS
 	soc_unregister_ac97_codec(codec);
 #endif
@@ -2162,7 +2156,6 @@ void snd_soc_free_ac97_codec(struct snd_soc_codec *codec)
 	kfree(codec->ac97);
 	codec->ac97 = NULL;
 	codec->ac97_created = 0;
-	mutex_unlock(&codec->mutex);
 }
 EXPORT_SYMBOL_GPL(snd_soc_free_ac97_codec);
 
