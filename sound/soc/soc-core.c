@@ -4192,10 +4192,10 @@ void snd_soc_remove_platform(struct snd_soc_platform *platform)
 	snd_soc_component_del_unlocked(&platform->component);
 	mutex_unlock(&client_mutex);
 
-	snd_soc_component_cleanup(&platform->component);
-
 	dev_dbg(platform->dev, "ASoC: Unregistered platform '%s'\n",
 		platform->component.name);
+
+	snd_soc_component_cleanup(&platform->component);
 }
 EXPORT_SYMBOL_GPL(snd_soc_remove_platform);
 
@@ -4353,7 +4353,6 @@ int snd_soc_register_codec(struct device *dev,
 	if (codec_drv->read)
 		codec->component.read = snd_soc_codec_drv_read;
 	codec->component.ignore_pmdown_time = codec_drv->ignore_pmdown_time;
-	codec->dapm.codec = codec;
 	codec->dapm.idle_bias_off = codec_drv->idle_bias_off;
 	codec->dapm.suspend_bias_off = codec_drv->suspend_bias_off;
 	if (codec_drv->seq_notifier)
