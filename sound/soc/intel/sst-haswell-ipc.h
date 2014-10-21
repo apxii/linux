@@ -40,6 +40,7 @@ struct sst_hsw_stream;
 struct sst_hsw_log_stream;
 struct sst_pdata;
 struct sst_module;
+struct sst_module_runtime;
 extern struct sst_ops haswell_ops;
 
 /* Stream Allocate Path ID */
@@ -84,6 +85,7 @@ enum sst_hsw_device_mclk {
 enum sst_hsw_device_mode {
 	SST_HSW_DEVICE_CLOCK_SLAVE   = 0,
 	SST_HSW_DEVICE_CLOCK_MASTER  = 1,
+	SST_HSW_DEVICE_TDM_CLOCK_MASTER = 2,
 };
 
 /* DX Power State */
@@ -295,7 +297,8 @@ struct sst_hsw_ipc_device_config_req {
 	u32 clock_frequency;
 	u32 mode;
 	u16 clock_divider;
-	u16 reserved;
+	u8 channels;
+	u8 reserved;
 } __attribute__((packed));
 
 /* Audio Data formats */
@@ -484,7 +487,10 @@ int sst_hsw_dx_get_state(struct sst_hsw *hsw, u32 item,
 int sst_hsw_dsp_init(struct device *dev, struct sst_pdata *pdata);
 void sst_hsw_dsp_free(struct device *dev, struct sst_pdata *pdata);
 struct sst_dsp *sst_hsw_get_dsp(struct sst_hsw *hsw);
-void sst_hsw_set_scratch_module(struct sst_hsw *hsw,
-	struct sst_module *scratch);
+
+/* runtime module management */
+struct sst_module_runtime *sst_hsw_runtime_module_create(struct sst_hsw *hsw,
+	int mod_id, int offset);
+void sst_hsw_runtime_module_free(struct sst_module_runtime *runtime);
 
 #endif

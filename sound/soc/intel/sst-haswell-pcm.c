@@ -89,10 +89,16 @@ static const struct snd_pcm_hardware hsw_pcm_hardware = {
 	.buffer_bytes_max	= HSW_PCM_PERIODS_MAX * PAGE_SIZE,
 };
 
+struct hsw_pcm_module_map {
+	int dai_id;
+	enum sst_hsw_module_id mod_id;
+};
+
 /* private data for each PCM DSP stream */
 struct hsw_pcm_data {
 	int dai_id;
 	struct sst_hsw_stream *stream;
+	struct sst_module_runtime *runtime;
 	u32 volume[2];
 	struct snd_pcm_substream *substream;
 	struct snd_compr_stream *cstream;
@@ -421,13 +427,7 @@ static int hsw_pcm_hw_params(struct snd_pcm_substream *substream,
 		return ret;
 	}
 
-	/* we only support stereo atm */
 	channels = params_channels(params);
-	if (channels != 2) {
-		dev_err(rtd->dev, "error: invalid channels %d\n", channels);
-		return -EINVAL;
-	}
-
 	map = create_channel_map(SST_HSW_CHANNEL_CONFIG_STEREO);
 	sst_hsw_stream_set_map_config(hsw, pcm_data->stream,
 			map, SST_HSW_CHANNEL_CONFIG_STEREO);
@@ -558,7 +558,7 @@ static u32 hsw_notify_pointer(struct sst_hsw_stream *stream, void *data)
 	pos = frames_to_bytes(runtime,
 		(runtime->control->appl_ptr % runtime->buffer_size));
 
-	dev_dbg(rtd->dev, "PCM: App pointer %d bytes\n", pos);
+	dev_vdbg(rtd->dev, "PCM: App pointer %d bytes\n", pos);
 
 	/* let alsa know we have play a period */
 	snd_pcm_period_elapsed(substream);
@@ -580,7 +580,7 @@ static snd_pcm_uframes_t hsw_pcm_pointer(struct snd_pcm_substream *substream)
 	offset = bytes_to_frames(runtime, position);
 	ppos = sst_hsw_get_dsp_presentation_position(hsw, pcm_data->stream);
 
-	dev_dbg(rtd->dev, "PCM: DMA pointer %du bytes, pos %llu\n",
+	dev_vdbg(rtd->dev, "PCM: DMA pointer %du bytes, pos %llu\n",
 		position, ppos);
 	return offset;
 }
@@ -659,6 +659,53 @@ static struct snd_pcm_ops hsw_pcm_ops = {
 	.pointer	= hsw_pcm_pointer,
 	.page		= snd_pcm_sgbuf_ops_page,
 };
+
+/* static mappings between PCMs and modules - may be dynamic in future */
+static struct hsw_pcm_module_map mod_map[] = {
+	{0, SST_HSW_MODULE_PCM_SYSTEM},		/* "System Pin" */
+	{1, SST_HSW_MODULE_PCM},		/* "Offload0 Pin" */
+	{2, SST_HSW_MODULE_PCM},		/* "Offload1 Pin" */
+	{3, SST_HSW_MODULE_PCM_REFERENCE},	/* "Loopback Pin" */
+	{4, SST_HSW_MODULE_PCM_CAPTURE},	/* "Capture Pin" */
+};
+
+static int hsw_pcm_create_modules(struct hsw_priv_data *pdata)
+{
+	struct sst_hsw *hsw = pdata->hsw;
+	struct hsw_pcm_data *pcm_data;
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(mod_map); i++) {
+		pcm_data = &pdata->pcm[i];
+
+		pcm_data->runtime = sst_hsw_runtime_module_create(hsw,
+			mod_map[i].mod_id);
+		if (pcm_data->runtime == NULL)
+			goto err;
+	}
+
+	return 0;
+
+err:
+	for (--i; i >= 0; i--) {
+		pcm_data = &pdata->pcm[i];
+		sst_hsw_runtime_module_free(pcm_data->runtime);
+	}
+
+	return -ENODEV;
+}
+
+static void hsw_pcm_free_modules(struct hsw_priv_data *pdata)
+{
+	struct hsw_pcm_data *pcm_data;
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(mod_map); i++) {
+		pcm_data = &pdata->pcm[i];
+
+		sst_hsw_runtime_module_free(pcm_data->runtime);
+	}
+}
 
 static void hsw_pcm_free(struct snd_pcm *pcm)
 {
@@ -741,7 +788,7 @@ static struct snd_soc_dai_driver hsw_dais[] = {
 		.capture = {
 			.stream_name = "Analog Capture",
 			.channels_min = 2,
-			.channels_max = 2,
+			.channels_max = 4,
 			.rates = SNDRV_PCM_RATE_48000,
 			.formats = SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S16_LE,
 		},
@@ -800,6 +847,9 @@ static int hsw_pcm_probe(struct snd_soc_platform *platform)
 				goto err;
 		}
 	}
+
+	/* allocate runtime modules */
+	hsw_pcm_create_modules(priv_data);
 
 	return 0;
 
