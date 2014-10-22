@@ -55,6 +55,8 @@ int free_stream_context(struct intel_sst_drv *ctx, unsigned int str_id)
 		if (ret)
 			sst_clean_stream(&ctx->streams[str_id]);
 		return ret;
+	} else {
+		dev_err(ctx->dev, "we tried to free stream context %d which was freed!!!\n", str_id);
 	}
 	return ret;
 }
@@ -92,7 +94,7 @@ int sst_get_sfreq(struct snd_sst_params *str_param)
 }
 
 /*
- * sst_get_sfreq - this function returns the frequency of the stream
+ * sst_get_num_channel - get number of channels for the stream
  *
  * @str_param : stream params
  */
