@@ -115,7 +115,7 @@ unsigned long long read_shim_data(struct intel_sst_drv *sst, int addr)
 {
 	unsigned long long val = 0;
 
-	switch (sst->pci_id) {
+	switch (sst->dev_id) {
 	case SST_MRFLD_PCI_ID:
 		val = sst_shim_read64(sst->shim, addr);
 		break;
@@ -126,7 +126,7 @@ unsigned long long read_shim_data(struct intel_sst_drv *sst, int addr)
 void write_shim_data(struct intel_sst_drv *sst, int addr,
 				unsigned long long data)
 {
-	switch (sst->pci_id) {
+	switch (sst->dev_id) {
 	case SST_MRFLD_PCI_ID:
 		sst_shim_write64(sst->shim, addr, (u64) data);
 		break;
@@ -433,6 +433,7 @@ u32 relocate_imr_addr_mrfld(u32 base_addr)
 	base_addr = MRFLD_FW_VIRTUAL_BASE + (base_addr % (512 * 1024 * 1024));
 	return base_addr;
 }
+EXPORT_SYMBOL_GPL(relocate_imr_addr_mrfld);
 
 void sst_add_to_dispatch_list_and_post(struct intel_sst_drv *sst,
 						struct ipc_post *msg)

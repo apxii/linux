@@ -36,6 +36,9 @@ struct sst_ops {
 	/* DSP core boot / reset */
 	void (*boot)(struct sst_dsp *);
 	void (*reset)(struct sst_dsp *);
+	int (*wake)(struct sst_dsp *);
+	void (*sleep)(struct sst_dsp *);
+	void (*stall)(struct sst_dsp *);
 
 	/* Shim IO */
 	void (*write)(void __iomem *addr, u32 offset, u32 value);
@@ -347,6 +350,10 @@ struct sst_mem_block *sst_mem_block_register(struct sst_dsp *dsp, u32 offset,
 	u32 size, enum sst_mem_type type, struct sst_block_ops *ops, u32 index,
 	void *private);
 void sst_mem_block_unregister_all(struct sst_dsp *dsp);
+
+/* Create/Free DMA resources */
+int sst_dma_new(struct sst_dsp *sst);
+void sst_dma_free(struct sst_dma *dma);
 
 u32 sst_dsp_get_offset(struct sst_dsp *dsp, u32 offset,
 	enum sst_mem_type type);

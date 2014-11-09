@@ -541,49 +541,51 @@ static bool rt5677_readable_register(struct device *dev, unsigned int reg)
 
 /**
  * rt5677_dsp_mode_i2c_write_addr - Write value to address on DSP mode.
- * @codec: SoC audio codec device.
+ * @rt5677: Private Data.
  * @addr: Address index.
  * @value: Address data.
  *
  *
  * Returns 0 for success or negative error code.
  */
-static int rt5677_dsp_mode_i2c_write_addr(struct snd_soc_codec *codec,
+static int rt5677_dsp_mode_i2c_write_addr(struct rt5677_priv *rt5677,
 		unsigned int addr, unsigned int value, unsigned int opcode)
 {
-	struct rt5677_priv *rt5677 = snd_soc_codec_get_drvdata(codec);
+	struct snd_soc_codec *codec = rt5677->codec;
 	int ret;
 
 	mutex_lock(&rt5677->dsp_cmd_lock);
 
-	ret = regmap_write(rt5677->regmap, RT5677_DSP_I2C_ADDR_MSB, addr >> 16);
+	ret = regmap_write(rt5677->regmap_physical, RT5677_DSP_I2C_ADDR_MSB,
+		addr >> 16);
 	if (ret < 0) {
 		dev_err(codec->dev, "Failed to set addr msb value: %d\n", ret);
 		goto err;
 	}
 
-	ret = regmap_write(rt5677->regmap, RT5677_DSP_I2C_ADDR_LSB,
+	ret = regmap_write(rt5677->regmap_physical, RT5677_DSP_I2C_ADDR_LSB,
 		addr & 0xffff);
 	if (ret < 0) {
 		dev_err(codec->dev, "Failed to set addr lsb value: %d\n", ret);
 		goto err;
 	}
 
-	ret = regmap_write(rt5677->regmap, RT5677_DSP_I2C_DATA_MSB,
+	ret = regmap_write(rt5677->regmap_physical, RT5677_DSP_I2C_DATA_MSB,
 		value >> 16);
 	if (ret < 0) {
 		dev_err(codec->dev, "Failed to set data msb value: %d\n", ret);
 		goto err;
 	}
 
-	ret = regmap_write(rt5677->regmap, RT5677_DSP_I2C_DATA_LSB,
+	ret = regmap_write(rt5677->regmap_physical, RT5677_DSP_I2C_DATA_LSB,
 		value & 0xffff);
 	if (ret < 0) {
 		dev_err(codec->dev, "Failed to set data lsb value: %d\n", ret);
 		goto err;
 	}
 
-	ret = regmap_write(rt5677->regmap, RT5677_DSP_I2C_OP_CODE, opcode);
+	ret = regmap_write(rt5677->regmap_physical, RT5677_DSP_I2C_OP_CODE,
+		opcode);
 	if (ret < 0) {
 		dev_err(codec->dev, "Failed to set op code value: %d\n", ret);
 		goto err;
@@ -597,42 +599,45 @@ err:
 
 /**
  * rt5677_dsp_mode_i2c_read_addr - Read value from address on DSP mode.
- * @codec: SoC audio codec device.
+ * rt5677: Private Data.
  * @addr: Address index.
  * @value: Address data.
+ *
  *
  * Returns 0 for success or negative error code.
  */
 static int rt5677_dsp_mode_i2c_read_addr(
-	struct snd_soc_codec *codec, unsigned int addr, unsigned int *value)
+	struct rt5677_priv *rt5677, unsigned int addr, unsigned int *value)
 {
-	struct rt5677_priv *rt5677 = snd_soc_codec_get_drvdata(codec);
+	struct snd_soc_codec *codec = rt5677->codec;
 	int ret;
 	unsigned int msb, lsb;
 
 	mutex_lock(&rt5677->dsp_cmd_lock);
 
-	ret = regmap_write(rt5677->regmap, RT5677_DSP_I2C_ADDR_MSB, addr >> 16);
+	ret = regmap_write(rt5677->regmap_physical, RT5677_DSP_I2C_ADDR_MSB,
+		addr >> 16);
 	if (ret < 0) {
 		dev_err(codec->dev, "Failed to set addr msb value: %d\n", ret);
 		goto err;
 	}
 
-	ret = regmap_write(rt5677->regmap, RT5677_DSP_I2C_ADDR_LSB,
+	ret = regmap_write(rt5677->regmap_physical, RT5677_DSP_I2C_ADDR_LSB,
 		addr & 0xffff);
 	if (ret < 0) {
 		dev_err(codec->dev, "Failed to set addr lsb value: %d\n", ret);
 		goto err;
 	}
 
-	ret = regmap_write(rt5677->regmap, RT5677_DSP_I2C_OP_CODE , 0x0002);
+	ret = regmap_write(rt5677->regmap_physical, RT5677_DSP_I2C_OP_CODE,
+		0x0002);
 	if (ret < 0) {
 		dev_err(codec->dev, "Failed to set op code value: %d\n", ret);
 		goto err;
 	}
 
-	regmap_read(rt5677->regmap, RT5677_DSP_I2C_DATA_MSB, &msb);
-	regmap_read(rt5677->regmap, RT5677_DSP_I2C_DATA_LSB, &lsb);
+	regmap_read(rt5677->regmap_physical, RT5677_DSP_I2C_DATA_MSB, &msb);
+	regmap_read(rt5677->regmap_physical, RT5677_DSP_I2C_DATA_LSB, &lsb);
 	*value = (msb << 16) | lsb;
 
 err:
@@ -643,17 +648,17 @@ err:
 
 /**
  * rt5677_dsp_mode_i2c_write - Write register on DSP mode.
- * @codec: SoC audio codec device.
+ * rt5677: Private Data.
  * @reg: Register index.
  * @value: Register data.
  *
  *
  * Returns 0 for success or negative error code.
  */
-static int rt5677_dsp_mode_i2c_write(struct snd_soc_codec *codec,
+static int rt5677_dsp_mode_i2c_write(struct rt5677_priv *rt5677,
 		unsigned int reg, unsigned int value)
 {
-	return rt5677_dsp_mode_i2c_write_addr(codec, 0x18020000 + reg * 2,
+	return rt5677_dsp_mode_i2c_write_addr(rt5677, 0x18020000 + reg * 2,
 		value, 0x0001);
 }
 
@@ -661,57 +666,33 @@ static int rt5677_dsp_mode_i2c_write(struct snd_soc_codec *codec,
  * rt5677_dsp_mode_i2c_read - Read register on DSP mode.
  * @codec: SoC audio codec device.
  * @reg: Register index.
+ * @value: Register data.
  *
  *
- * Returns Register value.
+ * Returns 0 for success or negative error code.
  */
-static unsigned int rt5677_dsp_mode_i2c_read(
-	struct snd_soc_codec *codec, unsigned int reg)
+static int rt5677_dsp_mode_i2c_read(
+	struct rt5677_priv *rt5677, unsigned int reg, unsigned int *value)
 {
-	unsigned int value = 0;
+	int ret = rt5677_dsp_mode_i2c_read_addr(rt5677, 0x18020000 + reg * 2,
+		value);
 
-	rt5677_dsp_mode_i2c_read_addr(codec, 0x18020000 + reg * 2, &value);
+	*value &= 0xffff;
 
-	return value;
+	return ret;
 }
 
-/**
- * rt5677_dsp_mode_i2c_update_bits - update register on DSP mode.
- * @codec: audio codec
- * @reg: register index.
- * @mask: register mask
- * @value: new value
- *
- *
- * Returns 1 for change, 0 for no change, or negative error code.
- */
-static int rt5677_dsp_mode_i2c_update_bits(struct snd_soc_codec *codec,
-	unsigned int reg, unsigned int mask, unsigned int value)
+static void rt5677_set_dsp_mode(struct snd_soc_codec *codec, bool on)
 {
-	unsigned int old, new;
-	int change, ret;
+	struct rt5677_priv *rt5677 = snd_soc_codec_get_drvdata(codec);
 
-	ret = rt5677_dsp_mode_i2c_read(codec, reg);
-	if (ret < 0) {
-		dev_err(codec->dev, "Failed to read reg: %d\n", ret);
-		goto err;
+	if (on) {
+		regmap_update_bits(rt5677->regmap, RT5677_PWR_DSP1, 0x2, 0x2);
+		rt5677->is_dsp_mode = true;
+	} else {
+		regmap_update_bits(rt5677->regmap, RT5677_PWR_DSP1, 0x2, 0x0);
+		rt5677->is_dsp_mode = false;
 	}
-
-	old = ret;
-	new = (old & ~mask) | (value & mask);
-	change = old != new;
-	if (change) {
-		ret = rt5677_dsp_mode_i2c_write(codec, reg, new);
-		if (ret < 0) {
-			dev_err(codec->dev,
-				"Failed to write reg: %d\n", ret);
-			goto err;
-		}
-	}
-	return change;
-
-err:
-	return ret;
 }
 
 static int rt5677_set_dsp_vad(struct snd_soc_codec *codec, bool on)
@@ -733,9 +714,14 @@ static int rt5677_set_dsp_vad(struct snd_soc_codec *codec, bool on)
 			RT5677_LDO1_SEL_MASK, 0x0);
 		regmap_update_bits(rt5677->regmap, RT5677_PWR_ANLG2,
 			RT5677_PWR_LDO1, RT5677_PWR_LDO1);
-		regmap_write(rt5677->regmap, RT5677_GLB_CLK2, 0x0080);
+		regmap_update_bits(rt5677->regmap, RT5677_GLB_CLK1,
+			RT5677_MCLK_SRC_MASK, RT5677_MCLK2_SRC);
+		regmap_update_bits(rt5677->regmap, RT5677_GLB_CLK2,
+			RT5677_PLL2_PR_SRC_MASK | RT5677_DSP_CLK_SRC_MASK,
+			RT5677_PLL2_PR_SRC_MCLK2 | RT5677_DSP_CLK_SRC_BYPASS);
 		regmap_write(rt5677->regmap, RT5677_PWR_DSP2, 0x07ff);
-		regmap_write(rt5677->regmap, RT5677_PWR_DSP1, 0x07ff);
+		regmap_write(rt5677->regmap, RT5677_PWR_DSP1, 0x07fd);
+		rt5677_set_dsp_mode(codec, true);
 
 		ret = request_firmware(&rt5677->fw1, RT5677_FIRMWARE1,
 			codec->dev);
@@ -751,8 +737,7 @@ static int rt5677_set_dsp_vad(struct snd_soc_codec *codec, bool on)
 			release_firmware(rt5677->fw2);
 		}
 
-		rt5677_dsp_mode_i2c_update_bits(codec, RT5677_PWR_DSP1, 0x1,
-			0x0);
+		regmap_update_bits(rt5677->regmap, RT5677_PWR_DSP1, 0x1, 0x0);
 
 		regcache_cache_bypass(rt5677->regmap, false);
 		regcache_cache_only(rt5677->regmap, true);
@@ -762,9 +747,9 @@ static int rt5677_set_dsp_vad(struct snd_soc_codec *codec, bool on)
 		regcache_cache_only(rt5677->regmap, false);
 		regcache_cache_bypass(rt5677->regmap, true);
 
-		rt5677_dsp_mode_i2c_update_bits(codec, RT5677_PWR_DSP1, 0x1,
-			0x1);
-		rt5677_dsp_mode_i2c_write(codec, RT5677_PWR_DSP1, 0x0001);
+		regmap_update_bits(rt5677->regmap, RT5677_PWR_DSP1, 0x1, 0x1);
+		rt5677_set_dsp_mode(codec, false);
+		regmap_write(rt5677->regmap, RT5677_PWR_DSP1, 0x0001);
 
 		regmap_write(rt5677->regmap, RT5677_RESET, 0x10ec);
 
@@ -1353,7 +1338,7 @@ static SOC_ENUM_SINGLE_DECL(
 static const struct snd_kcontrol_new rt5677_ib45_bypass_src_mux =
 	SOC_DAPM_ENUM("IB45 Bypass Source", rt5677_ib45_bypass_src_enum);
 
-/* Stereo ADC Source 2 */ /* MX-27 MX26  MX25 [11:10] */
+/* Stereo ADC Source 2 */ /* MX-27 MX26 MX25 [11:10] */
 static const char * const rt5677_stereo_adc2_src[] = {
 	"DD MIX1", "DMIC", "Stereo DAC MIX"
 };
@@ -1438,7 +1423,7 @@ static SOC_ENUM_SINGLE_DECL(
 static const struct snd_kcontrol_new rt5677_sto2_adc_lr_mux =
 	SOC_DAPM_ENUM("Stereo2 ADC LR Source", rt5677_stereo2_adc_lr_enum);
 
-/* Stereo1 ADC Source 1 */ /* MX-27 MX26  MX25 [13:12] */
+/* Stereo1 ADC Source 1 */ /* MX-27 MX26 MX25 [13:12] */
 static const char * const rt5677_stereo_adc1_src[] = {
 	"DD MIX1", "ADC1/2", "Stereo DAC MIX"
 };
@@ -1710,7 +1695,7 @@ static SOC_ENUM_SINGLE_DECL(
 static const struct snd_kcontrol_new rt5677_pdm2_r_mux =
 	SOC_DAPM_ENUM("PDM2 Source", rt5677_pdm2_r_enum);
 
-/* TDM IF1/2 SLB ADC1 Data Selection */ /* MX-3C MX-41 [5:4] MX-08 [1:0]*/
+/* TDM IF1/2 SLB ADC1 Data Selection */ /* MX-3C MX-41 [5:4] MX-08 [1:0] */
 static const char * const rt5677_if12_adc1_src[] = {
 	"STO1 ADC MIX", "OB01", "VAD ADC"
 };
@@ -1788,7 +1773,7 @@ static SOC_ENUM_SINGLE_DECL(
 static const struct snd_kcontrol_new rt5677_slb_adc3_mux =
 	SOC_DAPM_ENUM("SLB ADC3 Source", rt5677_slb_adc3_enum);
 
-/* TDM IF1/2 SLB ADC4 Data Selection */ /* MX-3C MX-41 [11:10]  MX-08 [7:6] */
+/* TDM IF1/2 SLB ADC4 Data Selection */ /* MX-3C MX-41 [11:10] MX-08 [7:6] */
 static const char * const rt5677_if12_adc4_src[] = {
 	"STO4 ADC MIX", "OB67", "OB01"
 };
@@ -1814,7 +1799,7 @@ static SOC_ENUM_SINGLE_DECL(
 static const struct snd_kcontrol_new rt5677_slb_adc4_mux =
 	SOC_DAPM_ENUM("SLB ADC4 Source", rt5677_slb_adc4_enum);
 
-/* Interface3/4 ADC Data Input */ /* MX-2F [3:0] MX-30 [7:4]*/
+/* Interface3/4 ADC Data Input */ /* MX-2F [3:0] MX-30 [7:4] */
 static const char * const rt5677_if34_adc_src[] = {
 	"STO1 ADC MIX", "STO2 ADC MIX", "STO3 ADC MIX", "STO4 ADC MIX",
 	"MONO ADC MIX", "OB01", "OB23", "VAD ADC"
@@ -1833,6 +1818,93 @@ static SOC_ENUM_SINGLE_DECL(
 
 static const struct snd_kcontrol_new rt5677_if4_adc_mux =
 	SOC_DAPM_ENUM("IF4 ADC Source", rt5677_if4_adc_enum);
+
+/* TDM IF1/2 ADC Data Selection */ /* MX-3B MX-40 [7:6][5:4][3:2][1:0] */
+static const char * const rt5677_if12_adc_swap_src[] = {
+	"L/R", "R/L", "L/L", "R/R"
+};
+
+static SOC_ENUM_SINGLE_DECL(
+	rt5677_if1_adc1_swap_enum, RT5677_TDM1_CTRL1,
+	RT5677_IF1_ADC1_SWAP_SFT, rt5677_if12_adc_swap_src);
+
+static const struct snd_kcontrol_new rt5677_if1_adc1_swap_mux =
+	SOC_DAPM_ENUM("IF1 ADC1 Swap Source", rt5677_if1_adc1_swap_enum);
+
+static SOC_ENUM_SINGLE_DECL(
+	rt5677_if1_adc2_swap_enum, RT5677_TDM1_CTRL1,
+	RT5677_IF1_ADC2_SWAP_SFT, rt5677_if12_adc_swap_src);
+
+static const struct snd_kcontrol_new rt5677_if1_adc2_swap_mux =
+	SOC_DAPM_ENUM("IF1 ADC2 Swap Source", rt5677_if1_adc2_swap_enum);
+
+static SOC_ENUM_SINGLE_DECL(
+	rt5677_if1_adc3_swap_enum, RT5677_TDM1_CTRL1,
+	RT5677_IF1_ADC3_SWAP_SFT, rt5677_if12_adc_swap_src);
+
+static const struct snd_kcontrol_new rt5677_if1_adc3_swap_mux =
+	SOC_DAPM_ENUM("IF1 ADC3 Swap Source", rt5677_if1_adc3_swap_enum);
+
+static SOC_ENUM_SINGLE_DECL(
+	rt5677_if1_adc4_swap_enum, RT5677_TDM1_CTRL1,
+	RT5677_IF1_ADC4_SWAP_SFT, rt5677_if12_adc_swap_src);
+
+static const struct snd_kcontrol_new rt5677_if1_adc4_swap_mux =
+	SOC_DAPM_ENUM("IF1 ADC4 Swap Source", rt5677_if1_adc4_swap_enum);
+
+static SOC_ENUM_SINGLE_DECL(
+	rt5677_if2_adc1_swap_enum, RT5677_TDM2_CTRL1,
+	RT5677_IF1_ADC2_SWAP_SFT, rt5677_if12_adc_swap_src);
+
+static const struct snd_kcontrol_new rt5677_if2_adc1_swap_mux =
+	SOC_DAPM_ENUM("IF1 ADC2 Swap Source", rt5677_if2_adc1_swap_enum);
+
+static SOC_ENUM_SINGLE_DECL(
+	rt5677_if2_adc2_swap_enum, RT5677_TDM2_CTRL1,
+	RT5677_IF2_ADC2_SWAP_SFT, rt5677_if12_adc_swap_src);
+
+static const struct snd_kcontrol_new rt5677_if2_adc2_swap_mux =
+	SOC_DAPM_ENUM("IF2 ADC2 Swap Source", rt5677_if2_adc2_swap_enum);
+
+static SOC_ENUM_SINGLE_DECL(
+	rt5677_if2_adc3_swap_enum, RT5677_TDM2_CTRL1,
+	RT5677_IF2_ADC3_SWAP_SFT, rt5677_if12_adc_swap_src);
+
+static const struct snd_kcontrol_new rt5677_if2_adc3_swap_mux =
+	SOC_DAPM_ENUM("IF2 ADC3 Swap Source", rt5677_if2_adc3_swap_enum);
+
+static SOC_ENUM_SINGLE_DECL(
+	rt5677_if2_adc4_swap_enum, RT5677_TDM2_CTRL1,
+	RT5677_IF2_ADC4_SWAP_SFT, rt5677_if12_adc_swap_src);
+
+static const struct snd_kcontrol_new rt5677_if2_adc4_swap_mux =
+	SOC_DAPM_ENUM("IF2 ADC4 Swap Source", rt5677_if2_adc4_swap_enum);
+
+/* TDM IF1 ADC Data Selection */ /* MX-3C [2:0] */
+static const char * const rt5677_if1_adc_tdm_swap_src[] = {
+	"1/2/3/4", "2/1/3/4", "2/3/1/4", "4/1/2/3", "1/3/2/4", "1/4/2/3",
+	"3/1/2/4", "3/4/1/2"
+};
+
+static SOC_ENUM_SINGLE_DECL(
+	rt5677_if1_adc_tdm_swap_enum, RT5677_TDM1_CTRL2,
+	RT5677_IF1_ADC_CTRL_SFT, rt5677_if1_adc_tdm_swap_src);
+
+static const struct snd_kcontrol_new rt5677_if1_adc_tdm_swap_mux =
+	SOC_DAPM_ENUM("IF1 ADC TDM Swap Source", rt5677_if1_adc_tdm_swap_enum);
+
+/* TDM IF2 ADC Data Selection */ /* MX-41[2:0] */
+static const char * const rt5677_if2_adc_tdm_swap_src[] = {
+	"1/2/3/4", "2/1/3/4", "3/1/2/4", "4/1/2/3", "1/3/2/4", "1/4/2/3",
+	"2/3/1/4", "3/4/1/2"
+};
+
+static SOC_ENUM_SINGLE_DECL(
+	rt5677_if2_adc_tdm_swap_enum, RT5677_TDM2_CTRL2,
+	RT5677_IF2_ADC_CTRL_SFT, rt5677_if2_adc_tdm_swap_src);
+
+static const struct snd_kcontrol_new rt5677_if2_adc_tdm_swap_mux =
+	SOC_DAPM_ENUM("IF2 ADC TDM Swap Source", rt5677_if2_adc_tdm_swap_enum);
 
 static int rt5677_bst1_event(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *kcontrol, int event)
@@ -1936,6 +2008,52 @@ static int rt5677_set_micbias1_event(struct snd_soc_dapm_widget *w,
 		regmap_update_bits(rt5677->regmap, RT5677_PWR_ANLG2,
 			RT5677_PWR_CLK_MB1 | RT5677_PWR_PP_MB1 |
 			RT5677_PWR_CLK_MB, 0);
+		break;
+
+	default:
+		return 0;
+	}
+
+	return 0;
+}
+
+static int rt5677_if1_adc_tdm_event(struct snd_soc_dapm_widget *w,
+	struct snd_kcontrol *kcontrol, int event)
+{
+	struct snd_soc_codec *codec = w->codec;
+	struct rt5677_priv *rt5677 = snd_soc_codec_get_drvdata(codec);
+	unsigned int value;
+
+	switch (event) {
+	case SND_SOC_DAPM_PRE_PMU:
+		regmap_read(rt5677->regmap, RT5677_TDM1_CTRL2, &value);
+		if (value & RT5677_IF1_ADC_CTRL_MASK)
+			regmap_update_bits(rt5677->regmap, RT5677_TDM1_CTRL1,
+				RT5677_IF1_ADC_MODE_MASK,
+				RT5677_IF1_ADC_MODE_TDM);
+		break;
+
+	default:
+		return 0;
+	}
+
+	return 0;
+}
+
+static int rt5677_if2_adc_tdm_event(struct snd_soc_dapm_widget *w,
+	struct snd_kcontrol *kcontrol, int event)
+{
+	struct snd_soc_codec *codec = w->codec;
+	struct rt5677_priv *rt5677 = snd_soc_codec_get_drvdata(codec);
+	unsigned int value;
+
+	switch (event) {
+	case SND_SOC_DAPM_PRE_PMU:
+		regmap_read(rt5677->regmap, RT5677_TDM2_CTRL2, &value);
+		if (value & RT5677_IF2_ADC_CTRL_MASK)
+			regmap_update_bits(rt5677->regmap, RT5677_TDM2_CTRL1,
+				RT5677_IF2_ADC_MODE_MASK,
+				RT5677_IF2_ADC_MODE_TDM);
 		break;
 
 	default:
@@ -2104,10 +2222,8 @@ static const struct snd_soc_dapm_widget rt5677_dapm_widgets[] = {
 	SND_SOC_DAPM_PGA("Stereo4 ADC MIX", SND_SOC_NOPM, 0, 0, NULL, 0),
 	SND_SOC_DAPM_PGA("Sto2 ADC LR MIX", SND_SOC_NOPM, 0, 0, NULL, 0),
 	SND_SOC_DAPM_PGA("Mono ADC MIX", SND_SOC_NOPM, 0, 0, NULL, 0),
-	SND_SOC_DAPM_PGA("IF1_ADC1", SND_SOC_NOPM, 0, 0, NULL, 0),
-	SND_SOC_DAPM_PGA("IF1_ADC2", SND_SOC_NOPM, 0, 0, NULL, 0),
-	SND_SOC_DAPM_PGA("IF1_ADC3", SND_SOC_NOPM, 0, 0, NULL, 0),
-	SND_SOC_DAPM_PGA("IF1_ADC4", SND_SOC_NOPM, 0, 0, NULL, 0),
+	SND_SOC_DAPM_PGA("IF1 ADC", SND_SOC_NOPM, 0, 0, NULL, 0),
+	SND_SOC_DAPM_PGA("IF2 ADC", SND_SOC_NOPM, 0, 0, NULL, 0),
 
 	/* DSP */
 	SND_SOC_DAPM_MUX("IB9 Mux", SND_SOC_NOPM, 0, 0,
@@ -2230,6 +2346,17 @@ static const struct snd_soc_dapm_widget rt5677_dapm_widgets[] = {
 			&rt5677_if1_adc3_mux),
 	SND_SOC_DAPM_MUX("IF1 ADC4 Mux", SND_SOC_NOPM, 0, 0,
 			&rt5677_if1_adc4_mux),
+	SND_SOC_DAPM_MUX("IF1 ADC1 Swap Mux", SND_SOC_NOPM, 0, 0,
+			&rt5677_if1_adc1_swap_mux),
+	SND_SOC_DAPM_MUX("IF1 ADC2 Swap Mux", SND_SOC_NOPM, 0, 0,
+			&rt5677_if1_adc2_swap_mux),
+	SND_SOC_DAPM_MUX("IF1 ADC3 Swap Mux", SND_SOC_NOPM, 0, 0,
+			&rt5677_if1_adc3_swap_mux),
+	SND_SOC_DAPM_MUX("IF1 ADC4 Swap Mux", SND_SOC_NOPM, 0, 0,
+			&rt5677_if1_adc4_swap_mux),
+	SND_SOC_DAPM_MUX_E("IF1 ADC TDM Swap Mux", SND_SOC_NOPM, 0, 0,
+			&rt5677_if1_adc_tdm_swap_mux, rt5677_if1_adc_tdm_event,
+			SND_SOC_DAPM_PRE_PMU),
 	SND_SOC_DAPM_MUX("IF2 ADC1 Mux", SND_SOC_NOPM, 0, 0,
 			&rt5677_if2_adc1_mux),
 	SND_SOC_DAPM_MUX("IF2 ADC2 Mux", SND_SOC_NOPM, 0, 0,
@@ -2238,6 +2365,17 @@ static const struct snd_soc_dapm_widget rt5677_dapm_widgets[] = {
 			&rt5677_if2_adc3_mux),
 	SND_SOC_DAPM_MUX("IF2 ADC4 Mux", SND_SOC_NOPM, 0, 0,
 			&rt5677_if2_adc4_mux),
+	SND_SOC_DAPM_MUX("IF2 ADC1 Swap Mux", SND_SOC_NOPM, 0, 0,
+			&rt5677_if2_adc1_swap_mux),
+	SND_SOC_DAPM_MUX("IF2 ADC2 Swap Mux", SND_SOC_NOPM, 0, 0,
+			&rt5677_if2_adc2_swap_mux),
+	SND_SOC_DAPM_MUX("IF2 ADC3 Swap Mux", SND_SOC_NOPM, 0, 0,
+			&rt5677_if2_adc3_swap_mux),
+	SND_SOC_DAPM_MUX("IF2 ADC4 Swap Mux", SND_SOC_NOPM, 0, 0,
+			&rt5677_if2_adc4_swap_mux),
+	SND_SOC_DAPM_MUX_E("IF2 ADC TDM Swap Mux", SND_SOC_NOPM, 0, 0,
+			&rt5677_if2_adc_tdm_swap_mux, rt5677_if2_adc_tdm_event,
+			SND_SOC_DAPM_PRE_PMU),
 	SND_SOC_DAPM_MUX("IF3 ADC Mux", SND_SOC_NOPM, 0, 0,
 			&rt5677_if3_adc_mux),
 	SND_SOC_DAPM_MUX("IF4 ADC Mux", SND_SOC_NOPM, 0, 0,
@@ -2289,7 +2427,7 @@ static const struct snd_soc_dapm_widget rt5677_dapm_widgets[] = {
 		rt5677_ob_7_mix, ARRAY_SIZE(rt5677_ob_7_mix)),
 
 	/* Output Side */
-	/* DAC mixer before sound effect  */
+	/* DAC mixer before sound effect */
 	SND_SOC_DAPM_MIXER("DAC1 MIXL", SND_SOC_NOPM, 0, 0,
 		rt5677_dac_l_mix, ARRAY_SIZE(rt5677_dac_l_mix)),
 	SND_SOC_DAPM_MIXER("DAC1 MIXR", SND_SOC_NOPM, 0, 0,
@@ -2621,11 +2759,42 @@ static const struct snd_soc_dapm_route rt5677_dapm_routes[] = {
 	{ "IF1 ADC4 Mux", "OB67", "OB67" },
 	{ "IF1 ADC4 Mux", "OB01", "OB01 Bypass Mux" },
 
+	{ "IF1 ADC1 Swap Mux", "L/R", "IF1 ADC1 Mux" },
+	{ "IF1 ADC1 Swap Mux", "R/L", "IF1 ADC1 Mux" },
+	{ "IF1 ADC1 Swap Mux", "L/L", "IF1 ADC1 Mux" },
+	{ "IF1 ADC1 Swap Mux", "R/R", "IF1 ADC1 Mux" },
+
+	{ "IF1 ADC2 Swap Mux", "L/R", "IF1 ADC2 Mux" },
+	{ "IF1 ADC2 Swap Mux", "R/L", "IF1 ADC2 Mux" },
+	{ "IF1 ADC2 Swap Mux", "L/L", "IF1 ADC2 Mux" },
+	{ "IF1 ADC2 Swap Mux", "R/R", "IF1 ADC2 Mux" },
+
+	{ "IF1 ADC3 Swap Mux", "L/R", "IF1 ADC3 Mux" },
+	{ "IF1 ADC3 Swap Mux", "R/L", "IF1 ADC3 Mux" },
+	{ "IF1 ADC3 Swap Mux", "L/L", "IF1 ADC3 Mux" },
+	{ "IF1 ADC3 Swap Mux", "R/R", "IF1 ADC3 Mux" },
+
+	{ "IF1 ADC4 Swap Mux", "L/R", "IF1 ADC4 Mux" },
+	{ "IF1 ADC4 Swap Mux", "R/L", "IF1 ADC4 Mux" },
+	{ "IF1 ADC4 Swap Mux", "L/L", "IF1 ADC4 Mux" },
+	{ "IF1 ADC4 Swap Mux", "R/R", "IF1 ADC4 Mux" },
+
+	{ "IF1 ADC", NULL, "IF1 ADC1 Swap Mux" },
+	{ "IF1 ADC", NULL, "IF1 ADC2 Swap Mux" },
+	{ "IF1 ADC", NULL, "IF1 ADC3 Swap Mux" },
+	{ "IF1 ADC", NULL, "IF1 ADC4 Swap Mux" },
+
+	{ "IF1 ADC TDM Swap Mux", "1/2/3/4", "IF1 ADC" },
+	{ "IF1 ADC TDM Swap Mux", "2/1/3/4", "IF1 ADC" },
+	{ "IF1 ADC TDM Swap Mux", "2/3/1/4", "IF1 ADC" },
+	{ "IF1 ADC TDM Swap Mux", "4/1/2/3", "IF1 ADC" },
+	{ "IF1 ADC TDM Swap Mux", "1/3/2/4", "IF1 ADC" },
+	{ "IF1 ADC TDM Swap Mux", "1/4/2/3", "IF1 ADC" },
+	{ "IF1 ADC TDM Swap Mux", "3/1/2/4", "IF1 ADC" },
+	{ "IF1 ADC TDM Swap Mux", "3/4/1/2", "IF1 ADC" },
+
 	{ "AIF1TX", NULL, "I2S1" },
-	{ "AIF1TX", NULL, "IF1 ADC1 Mux" },
-	{ "AIF1TX", NULL, "IF1 ADC2 Mux" },
-	{ "AIF1TX", NULL, "IF1 ADC3 Mux" },
-	{ "AIF1TX", NULL, "IF1 ADC4 Mux" },
+	{ "AIF1TX", NULL, "IF1 ADC TDM Swap Mux" },
 
 	{ "IF2 ADC1 Mux", "STO1 ADC MIX", "Stereo1 ADC MIX" },
 	{ "IF2 ADC1 Mux", "OB01", "OB01 Bypass Mux" },
@@ -2642,11 +2811,42 @@ static const struct snd_soc_dapm_route rt5677_dapm_routes[] = {
 	{ "IF2 ADC4 Mux", "OB67", "OB67" },
 	{ "IF2 ADC4 Mux", "OB01", "OB01 Bypass Mux" },
 
+	{ "IF2 ADC1 Swap Mux", "L/R", "IF2 ADC1 Mux" },
+	{ "IF2 ADC1 Swap Mux", "R/L", "IF2 ADC1 Mux" },
+	{ "IF2 ADC1 Swap Mux", "L/L", "IF2 ADC1 Mux" },
+	{ "IF2 ADC1 Swap Mux", "R/R", "IF2 ADC1 Mux" },
+
+	{ "IF2 ADC2 Swap Mux", "L/R", "IF2 ADC2 Mux" },
+	{ "IF2 ADC2 Swap Mux", "R/L", "IF2 ADC2 Mux" },
+	{ "IF2 ADC2 Swap Mux", "L/L", "IF2 ADC2 Mux" },
+	{ "IF2 ADC2 Swap Mux", "R/R", "IF2 ADC2 Mux" },
+
+	{ "IF2 ADC3 Swap Mux", "L/R", "IF2 ADC3 Mux" },
+	{ "IF2 ADC3 Swap Mux", "R/L", "IF2 ADC3 Mux" },
+	{ "IF2 ADC3 Swap Mux", "L/L", "IF2 ADC3 Mux" },
+	{ "IF2 ADC3 Swap Mux", "R/R", "IF2 ADC3 Mux" },
+
+	{ "IF2 ADC4 Swap Mux", "L/R", "IF2 ADC4 Mux" },
+	{ "IF2 ADC4 Swap Mux", "R/L", "IF2 ADC4 Mux" },
+	{ "IF2 ADC4 Swap Mux", "L/L", "IF2 ADC4 Mux" },
+	{ "IF2 ADC4 Swap Mux", "R/R", "IF2 ADC4 Mux" },
+
+	{ "IF2 ADC", NULL, "IF2 ADC1 Swap Mux" },
+	{ "IF2 ADC", NULL, "IF2 ADC2 Swap Mux" },
+	{ "IF2 ADC", NULL, "IF2 ADC3 Swap Mux" },
+	{ "IF2 ADC", NULL, "IF2 ADC4 Swap Mux" },
+
+	{ "IF2 ADC TDM Swap Mux", "1/2/3/4", "IF2 ADC" },
+	{ "IF2 ADC TDM Swap Mux", "2/1/3/4", "IF2 ADC" },
+	{ "IF2 ADC TDM Swap Mux", "3/1/2/4", "IF2 ADC" },
+	{ "IF2 ADC TDM Swap Mux", "4/1/2/3", "IF2 ADC" },
+	{ "IF2 ADC TDM Swap Mux", "1/3/2/4", "IF2 ADC" },
+	{ "IF2 ADC TDM Swap Mux", "1/4/2/3", "IF2 ADC" },
+	{ "IF2 ADC TDM Swap Mux", "2/3/1/4", "IF2 ADC" },
+	{ "IF2 ADC TDM Swap Mux", "3/4/1/2", "IF2 ADC" },
+
 	{ "AIF2TX", NULL, "I2S2" },
-	{ "AIF2TX", NULL, "IF2 ADC1 Mux" },
-	{ "AIF2TX", NULL, "IF2 ADC2 Mux" },
-	{ "AIF2TX", NULL, "IF2 ADC3 Mux" },
-	{ "AIF2TX", NULL, "IF2 ADC4 Mux" },
+	{ "AIF2TX", NULL, "IF2 ADC TDM Swap Mux" },
 
 	{ "IF3 ADC Mux", "STO1 ADC MIX", "Stereo1 ADC MIX" },
 	{ "IF3 ADC Mux", "STO2 ADC MIX", "Stereo2 ADC MIX" },
@@ -3804,6 +4004,32 @@ static int rt5677_resume(struct snd_soc_codec *codec)
 #define rt5677_resume NULL
 #endif
 
+static int rt5677_read(void *context, unsigned int reg, unsigned int *val)
+{
+	struct i2c_client *client = context;
+	struct rt5677_priv *rt5677 = i2c_get_clientdata(client);
+
+	if (rt5677->is_dsp_mode)
+		rt5677_dsp_mode_i2c_read(rt5677, reg, val);
+	else
+		regmap_read(rt5677->regmap_physical, reg, val);
+
+	return 0;
+}
+
+static int rt5677_write(void *context, unsigned int reg, unsigned int val)
+{
+	struct i2c_client *client = context;
+	struct rt5677_priv *rt5677 = i2c_get_clientdata(client);
+
+	if (rt5677->is_dsp_mode)
+		rt5677_dsp_mode_i2c_write(rt5677, reg, val);
+	else
+		regmap_write(rt5677->regmap_physical, reg, val);
+
+	return 0;
+}
+
 #define RT5677_STEREO_RATES SNDRV_PCM_RATE_8000_96000
 #define RT5677_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S20_3LE | \
 			SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S8)
@@ -3929,6 +4155,17 @@ static struct snd_soc_codec_driver soc_codec_dev_rt5677 = {
 	.num_dapm_routes = ARRAY_SIZE(rt5677_dapm_routes),
 };
 
+static const struct regmap_config rt5677_regmap_physical = {
+	.name = "physical",
+	.reg_bits = 8,
+	.val_bits = 16,
+
+	.max_register = RT5677_VENDOR_ID2 + 1,
+	.readable_reg = rt5677_readable_register,
+
+	.cache_type = REGCACHE_NONE,
+};
+
 static const struct regmap_config rt5677_regmap = {
 	.reg_bits = 8,
 	.val_bits = 16,
@@ -3938,6 +4175,8 @@ static const struct regmap_config rt5677_regmap = {
 
 	.volatile_reg = rt5677_volatile_register,
 	.readable_reg = rt5677_readable_register,
+	.reg_read = rt5677_read,
+	.reg_write = rt5677_write,
 
 	.cache_type = REGCACHE_RBTREE,
 	.reg_defaults = rt5677_reg,
@@ -4094,7 +4333,16 @@ static int rt5677_i2c_probe(struct i2c_client *i2c,
 		msleep(10);
 	}
 
-	rt5677->regmap = devm_regmap_init_i2c(i2c, &rt5677_regmap);
+	rt5677->regmap_physical = devm_regmap_init_i2c(i2c,
+					&rt5677_regmap_physical);
+	if (IS_ERR(rt5677->regmap_physical)) {
+		ret = PTR_ERR(rt5677->regmap_physical);
+		dev_err(&i2c->dev, "Failed to allocate register map: %d\n",
+			ret);
+		return ret;
+	}
+
+	rt5677->regmap = devm_regmap_init(&i2c->dev, NULL, i2c, &rt5677_regmap);
 	if (IS_ERR(rt5677->regmap)) {
 		ret = PTR_ERR(rt5677->regmap);
 		dev_err(&i2c->dev, "Failed to allocate register map: %d\n",

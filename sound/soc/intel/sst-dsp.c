@@ -245,6 +245,29 @@ int sst_dsp_boot(struct sst_dsp *sst)
 }
 EXPORT_SYMBOL_GPL(sst_dsp_boot);
 
+int sst_dsp_wake(struct sst_dsp *sst)
+{
+	if (sst->ops->wake)
+		return sst->ops->wake(sst);
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(sst_dsp_wake);
+
+void sst_dsp_sleep(struct sst_dsp *sst)
+{
+	if (sst->ops->sleep)
+		sst->ops->sleep(sst);
+}
+EXPORT_SYMBOL_GPL(sst_dsp_sleep);
+
+void sst_dsp_stall(struct sst_dsp *sst)
+{
+	if (sst->ops->stall)
+		sst->ops->stall(sst);
+}
+EXPORT_SYMBOL_GPL(sst_dsp_stall);
+
 void sst_dsp_ipc_msg_tx(struct sst_dsp *dsp, u32 msg)
 {
 	sst_dsp_shim_write_unlocked(dsp, SST_IPCX, msg | SST_IPCX_BUSY);
@@ -367,6 +390,10 @@ struct sst_dsp *sst_dsp_new(struct device *dev,
 	if (err)
 		goto irq_err;
 
+	err = sst_dma_new(sst);
+	if (err)
+		dev_warn(dev, "sst_dma_new failed %d\n", err);
+
 	return sst;
 
 irq_err:
@@ -382,6 +409,9 @@ void sst_dsp_free(struct sst_dsp *sst)
 	free_irq(sst->irq, sst);
 	if (sst->ops->free)
 		sst->ops->free(sst);
+
+	if (sst->dma)
+		sst_dma_free(sst->dma);
 }
 EXPORT_SYMBOL_GPL(sst_dsp_free);
 
