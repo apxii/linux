@@ -1855,6 +1855,7 @@
 #define RT5645_M_BB_HPF_R_SFT			6
 #define RT5645_G_BB_BST_MASK			(0x3f)
 #define RT5645_G_BB_BST_SFT			0
+#define RT5645_G_BB_BST_25DB			0x14
 
 /* MP3 Plus Control 1 (0xd0) */
 #define RT5645_M_MP3_L_MASK			(0x1 << 15)
@@ -2172,7 +2173,8 @@ struct rt5645_priv {
 	struct rt5645_platform_data pdata;
 	struct regmap *regmap;
 	struct i2c_client *i2c;
-	struct snd_soc_jack *jack;
+	struct snd_soc_jack *hp_jack;
+	struct snd_soc_jack *mic_jack;
 	struct delayed_work jack_detect_work;
 
 	int sysclk;
@@ -2187,6 +2189,6 @@ struct rt5645_priv {
 };
 
 int rt5645_set_jack_detect(struct snd_soc_codec *codec,
-	struct snd_soc_jack *jack);
+	struct snd_soc_jack *hp_jack, struct snd_soc_jack *mic_jack);
 
 #endif /* __RT5645_H__ */

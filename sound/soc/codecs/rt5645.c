@@ -443,65 +443,6 @@ static SOC_ENUM_SINGLE_DECL(rt5645_tdm_adc_sel_enum,
 				RT5645_TDM_CTRL_1, 8,
 				rt5645_tdm_adc_data_select);
 
-static int rt5645_clk_sel_put(struct snd_kcontrol *kcontrol,
-		struct snd_ctl_elem_value *ucontrol)
-{
-	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
-	unsigned int u_bit = 0, p_bit = 0;
-	struct soc_enum *em =
-		(struct soc_enum *)kcontrol->private_value;
-
-	switch (em->reg) {
-	case RT5645_ASRC_2:
-		switch (em->shift_l) {
-		case 0:
-			u_bit = 0x8;
-			p_bit = RT5645_PWR_ADC_S1F;
-			break;
-		case 4:
-			u_bit = 0x100;
-			p_bit = RT5645_PWR_DAC_MF_R;
-			break;
-		case 8:
-			u_bit = 0x200;
-			p_bit = RT5645_PWR_DAC_MF_L;
-			break;
-		case 12:
-			u_bit = 0x400;
-			p_bit = RT5645_PWR_DAC_S1F;
-			break;
-		}
-		break;
-	case RT5645_ASRC_3:
-		switch (em->shift_l) {
-		case 0:
-			u_bit = 0x1;
-			p_bit = RT5645_PWR_ADC_MF_R;
-			break;
-		case 4:
-			u_bit = 0x2;
-			p_bit = RT5645_PWR_ADC_MF_L;
-			break;
-		}
-		break;
-	}
-
-	if (u_bit || p_bit) {
-		switch (ucontrol->value.integer.value[0]) {
-		case 1 ... 4: /*enable*/
-			if (snd_soc_read(codec, RT5645_PWR_DIG2) & p_bit)
-				snd_soc_update_bits(codec,
-					RT5645_ASRC_1, u_bit, u_bit);
-			break;
-		default: /*disable*/
-			snd_soc_update_bits(codec, RT5645_ASRC_1, u_bit, 0);
-			break;
-		}
-	}
-
-	return snd_soc_put_enum_double(kcontrol, ucontrol);
-}
-
 static const struct snd_kcontrol_new rt5645_snd_controls[] = {
 	/* Speaker Output Volume */
 	SOC_DOUBLE("Speaker Channel Switch", RT5645_SPK_VOL,
@@ -2173,8 +2114,11 @@ static int rt5645_set_tdm_slot(struct snd_soc_dai *dai, unsigned int tx_mask,
 	struct snd_soc_codec *codec = dai->codec;
 	unsigned int val = 0;
 
-	if (rx_mask || tx_mask)
+	if (rx_mask || tx_mask) {
 		val |= (1 << 14);
+		snd_soc_update_bits(codec, RT5645_BASS_BACK,
+			RT5645_G_BB_BST_MASK, RT5645_G_BB_BST_25DB);
+	}
 
 	switch (slots) {
 	case 4:
@@ -2259,8 +2203,7 @@ static int rt5645_set_bias_level(struct snd_soc_codec *codec,
 	return 0;
 }
 
-static int rt5645_jack_detect(struct snd_soc_codec *codec,
-	struct snd_soc_jack *jack)
+static int rt5645_jack_detect(struct snd_soc_codec *codec)
 {
 	struct rt5645_priv *rt5645 = snd_soc_codec_get_drvdata(codec);
 	int gpio_state, jack_type = 0;
@@ -2303,19 +2246,19 @@ static int rt5645_jack_detect(struct snd_soc_codec *codec,
 		snd_soc_dapm_sync(&codec->dapm);
 	}
 
-	snd_soc_jack_report(rt5645->jack, jack_type, SND_JACK_HEADSET);
-
+	snd_soc_jack_report(rt5645->hp_jack, jack_type, SND_JACK_HEADPHONE);
+	snd_soc_jack_report(rt5645->mic_jack, jack_type, SND_JACK_MICROPHONE);
 	return 0;
 }
 
 int rt5645_set_jack_detect(struct snd_soc_codec *codec,
-	struct snd_soc_jack *jack)
+	struct snd_soc_jack *hp_jack, struct snd_soc_jack *mic_jack)
 {
 	struct rt5645_priv *rt5645 = snd_soc_codec_get_drvdata(codec);
 
-	rt5645->jack = jack;
-
-	rt5645_jack_detect(codec, rt5645->jack);
+	rt5645->hp_jack = hp_jack;
+	rt5645->mic_jack = mic_jack;
+	rt5645_jack_detect(codec);
 
 	return 0;
 }
@@ -2326,7 +2269,7 @@ static void rt5645_jack_detect_work(struct work_struct *work)
 	struct rt5645_priv *rt5645 =
 		container_of(work, struct rt5645_priv, jack_detect_work.work);
 
-	rt5645_jack_detect(rt5645->codec, rt5645->jack);
+	rt5645_jack_detect(rt5645->codec);
 }
 
 static irqreturn_t rt5645_irq(int irq, void *data)
