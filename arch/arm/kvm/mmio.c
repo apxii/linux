@@ -162,6 +162,21 @@ static int decode_hsr(struct kvm_vcpu *vcpu, phys_addr_t fault_ipa,
 	return 0;
 }
 
+static int handle_io_bus_rw(struct kvm_vcpu *vcpu, gpa_t addr,
+			    int len, void *val, bool write)
+{
+	int idx, ret;
+
+	idx = srcu_read_lock(&vcpu->kvm->srcu);
+	if (write)
+		ret = kvm_io_bus_write(vcpu->kvm, KVM_MMIO_BUS, addr, len, val);
+	else
+		ret = kvm_io_bus_read(vcpu->kvm, KVM_MMIO_BUS, addr, len, val);
+	srcu_read_unlock(&vcpu->kvm->srcu, idx);
+
+	return ret;
+}
+
 int io_mem_abort(struct kvm_vcpu *vcpu, struct kvm_run *run,
 		 phys_addr_t fault_ipa)
 {
@@ -198,6 +213,10 @@ int io_mem_abort(struct kvm_vcpu *vcpu, struct kvm_run *run,
 		mmio_write_buf(mmio.data, mmio.len, data);
 
 	if (vgic_handle_mmio(vcpu, run, &mmio))
+		return 1;
+
+	if (!handle_io_bus_rw(vcpu, fault_ipa, mmio.len, &mmio.data,
+	    mmio.is_write))
 		return 1;
 
 	kvm_prepare_mmio(run, &mmio);
