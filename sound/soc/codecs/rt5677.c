@@ -55,12 +55,13 @@ static const struct regmap_range_cfg rt5677_ranges[] = {
 };
 
 static const struct reg_default init_list[] = {
+	{RT5677_ASRC_12,	0x0018},
 	{RT5677_PR_BASE + 0x3d,	0x364d},
-	{RT5677_PR_BASE + 0x17, 0x4fc0},
-	{RT5677_PR_BASE + 0x13, 0x0312},
-	{RT5677_PR_BASE + 0x1e, 0x0000},
-	{RT5677_PR_BASE + 0x12, 0x0eaa},
-	{RT5677_PR_BASE + 0x14, 0x018a},
+	{RT5677_PR_BASE + 0x17,	0x4fc0},
+	{RT5677_PR_BASE + 0x13,	0x0312},
+	{RT5677_PR_BASE + 0x1e,	0x0000},
+	{RT5677_PR_BASE + 0x12,	0x0eaa},
+	{RT5677_PR_BASE + 0x14,	0x018a},
 };
 #define RT5677_INIT_REG_LEN ARRAY_SIZE(init_list)
 
@@ -173,7 +174,7 @@ static const struct reg_default rt5677_reg[] = {
 	{RT5677_ASRC_9			, 0x0000},
 	{RT5677_ASRC_10			, 0x0000},
 	{RT5677_ASRC_11			, 0x0000},
-	{RT5677_ASRC_12			, 0x0008},
+	{RT5677_ASRC_12			, 0x0018},
 	{RT5677_ASRC_13			, 0x0000},
 	{RT5677_ASRC_14			, 0x0000},
 	{RT5677_ASRC_15			, 0x0000},
@@ -2183,6 +2184,31 @@ static int rt5677_if2_adc_tdm_event(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
+static int rt5677_vref_event(struct snd_soc_dapm_widget *w,
+	struct snd_kcontrol *kcontrol, int event)
+{
+	struct snd_soc_codec *codec = w->codec;
+	struct rt5677_priv *rt5677 = snd_soc_codec_get_drvdata(codec);
+
+	switch (event) {
+	case SND_SOC_DAPM_POST_PMU:
+		if (codec->dapm.bias_level != SND_SOC_BIAS_ON &&
+			!rt5677->is_vref_slow) {
+			mdelay(20);
+			regmap_update_bits(rt5677->regmap, RT5677_PWR_ANLG1,
+				RT5677_PWR_FV1 | RT5677_PWR_FV2,
+				RT5677_PWR_FV1 | RT5677_PWR_FV2);
+			rt5677->is_vref_slow = true;
+		}
+		break;
+
+	default:
+		return 0;
+	}
+
+	return 0;
+}
+
 static const struct snd_soc_dapm_widget rt5677_dapm_widgets[] = {
 	SND_SOC_DAPM_SUPPLY("PLL1", RT5677_PWR_ANLG2, RT5677_PWR_PLL1_BIT,
 		0, rt5677_set_pll1_event, SND_SOC_DAPM_POST_PMU),
@@ -2668,12 +2694,19 @@ static const struct snd_soc_dapm_widget rt5677_dapm_widgets[] = {
 	SND_SOC_DAPM_MUX("PDM2 R Mux", RT5677_PDM_OUT_CTRL, RT5677_M_PDM2_R_SFT,
 		1, &rt5677_pdm2_r_mux),
 
-	SND_SOC_DAPM_PGA_S("LOUT1 amp", 1, RT5677_PWR_ANLG1, RT5677_PWR_LO1_BIT,
+	SND_SOC_DAPM_PGA_S("LOUT1 amp", 0, RT5677_PWR_ANLG1, RT5677_PWR_LO1_BIT,
 		0, NULL, 0),
-	SND_SOC_DAPM_PGA_S("LOUT2 amp", 1, RT5677_PWR_ANLG1, RT5677_PWR_LO2_BIT,
+	SND_SOC_DAPM_PGA_S("LOUT2 amp", 0, RT5677_PWR_ANLG1, RT5677_PWR_LO2_BIT,
 		0, NULL, 0),
-	SND_SOC_DAPM_PGA_S("LOUT3 amp", 1, RT5677_PWR_ANLG1, RT5677_PWR_LO3_BIT,
+	SND_SOC_DAPM_PGA_S("LOUT3 amp", 0, RT5677_PWR_ANLG1, RT5677_PWR_LO3_BIT,
 		0, NULL, 0),
+
+	SND_SOC_DAPM_PGA_S("LOUT1 vref", 1, SND_SOC_NOPM, 0, 0,
+		rt5677_vref_event, SND_SOC_DAPM_POST_PMU),
+	SND_SOC_DAPM_PGA_S("LOUT2 vref", 1, SND_SOC_NOPM, 0, 0,
+		rt5677_vref_event, SND_SOC_DAPM_POST_PMU),
+	SND_SOC_DAPM_PGA_S("LOUT3 vref", 1, SND_SOC_NOPM, 0, 0,
+		rt5677_vref_event, SND_SOC_DAPM_POST_PMU),
 
 	/* Output Lines */
 	SND_SOC_DAPM_OUTPUT("LOUT1"),
@@ -2683,6 +2716,8 @@ static const struct snd_soc_dapm_widget rt5677_dapm_widgets[] = {
 	SND_SOC_DAPM_OUTPUT("PDM1R"),
 	SND_SOC_DAPM_OUTPUT("PDM2L"),
 	SND_SOC_DAPM_OUTPUT("PDM2R"),
+
+	SND_SOC_DAPM_POST("vref", rt5677_vref_event),
 };
 
 static const struct snd_soc_dapm_route rt5677_dapm_routes[] = {
@@ -3571,9 +3606,13 @@ static const struct snd_soc_dapm_route rt5677_dapm_routes[] = {
 	{ "LOUT2 amp", NULL, "DAC 2" },
 	{ "LOUT3 amp", NULL, "DAC 3" },
 
-	{ "LOUT1", NULL, "LOUT1 amp" },
-	{ "LOUT2", NULL, "LOUT2 amp" },
-	{ "LOUT3", NULL, "LOUT3 amp" },
+	{ "LOUT1 vref", NULL, "LOUT1 amp" },
+	{ "LOUT2 vref", NULL, "LOUT2 amp" },
+	{ "LOUT3 vref", NULL, "LOUT3 amp" },
+
+	{ "LOUT1", NULL, "LOUT1 vref" },
+	{ "LOUT2", NULL, "LOUT2 vref" },
+	{ "LOUT3", NULL, "LOUT3 vref" },
 
 	{ "PDM1L", NULL, "PDM1 L Mux" },
 	{ "PDM1R", NULL, "PDM1 R Mux" },
@@ -3956,14 +3995,12 @@ static int rt5677_set_bias_level(struct snd_soc_codec *codec,
 				RT5677_PR_BASE + RT5677_BIAS_CUR4,
 				0x0f00, 0x0f00);
 			regmap_update_bits(rt5677->regmap, RT5677_PWR_ANLG1,
+				RT5677_PWR_FV1 | RT5677_PWR_FV2 |
 				RT5677_PWR_VREF1 | RT5677_PWR_MB |
 				RT5677_PWR_BG | RT5677_PWR_VREF2,
 				RT5677_PWR_VREF1 | RT5677_PWR_MB |
 				RT5677_PWR_BG | RT5677_PWR_VREF2);
-			mdelay(20);
-			regmap_update_bits(rt5677->regmap, RT5677_PWR_ANLG1,
-				RT5677_PWR_FV1 | RT5677_PWR_FV2,
-				RT5677_PWR_FV1 | RT5677_PWR_FV2);
+			rt5677->is_vref_slow = false;
 			regmap_update_bits(rt5677->regmap, RT5677_PWR_ANLG2,
 				RT5677_PWR_CORE, RT5677_PWR_CORE);
 			regmap_update_bits(rt5677->regmap, RT5677_DIG_MISC,
@@ -4551,7 +4588,7 @@ static struct regmap_irq_chip rt5677_irq_chip = {
 	.mask_invert = 1,
 };
 
-static int rt5677_irq_init(struct i2c_client *i2c)
+static int rt5677_init_irq(struct i2c_client *i2c)
 {
 	int ret;
 	struct rt5677_priv *rt5677 = i2c_get_clientdata(i2c);
@@ -4578,7 +4615,7 @@ static int rt5677_irq_init(struct i2c_client *i2c)
 	return 0;
 }
 
-static void rt5677_irq_exit(struct i2c_client *i2c)
+static void rt5677_free_irq(struct i2c_client *i2c)
 {
 	struct rt5677_priv *rt5677 = i2c_get_clientdata(i2c);
 
@@ -4692,7 +4729,7 @@ static int rt5677_i2c_probe(struct i2c_client *i2c,
 	}
 
 	rt5677_init_gpio(i2c);
-	rt5677_irq_init(i2c);
+	rt5677_init_irq(i2c);
 
 	return snd_soc_register_codec(&i2c->dev, &soc_codec_dev_rt5677,
 				      rt5677_dai, ARRAY_SIZE(rt5677_dai));
@@ -4700,9 +4737,8 @@ static int rt5677_i2c_probe(struct i2c_client *i2c,
 
 static int rt5677_i2c_remove(struct i2c_client *i2c)
 {
-	rt5677_irq_exit(i2c);
-
 	snd_soc_unregister_codec(&i2c->dev);
+	rt5677_free_irq(i2c);
 	rt5677_free_gpio(i2c);
 
 	return 0;

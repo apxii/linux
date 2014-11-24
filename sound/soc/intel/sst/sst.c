@@ -183,6 +183,7 @@ int sst_driver_ops(struct intel_sst_drv *sst)
 	switch (sst->dev_id) {
 	case SST_MRFLD_PCI_ID:
 	case SST_BYT_ACPI_ID:
+	case SST_CHV_ACPI_ID:
 		sst->tstamp = SST_TIME_STAMP_MRFLD;
 		sst->ops = &mrfld_ops;
 		return 0;
@@ -378,13 +379,13 @@ void sst_configure_runtime_pm(struct intel_sst_drv *ctx)
 	 * initially active. So change the state to active before
 	 * enabling the pm
 	 */
-	if (acpi_disabled) {
+	pm_runtime_enable(ctx->dev);
+
+	if (acpi_disabled)
 		pm_runtime_set_active(ctx->dev);
-		pm_runtime_enable(ctx->dev);
-	} else {
-		pm_runtime_allow(ctx->dev);
+	else
 		pm_runtime_put_noidle(ctx->dev);
-	}
+
 	sst_save_shim64(ctx, ctx->shim, ctx->shim_regs64);
 }
 EXPORT_SYMBOL_GPL(sst_configure_runtime_pm);
