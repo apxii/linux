@@ -148,22 +148,6 @@ static int imx_wm8960_set_bias_level(struct snd_soc_card *card,
 	return 0;
 }
 
-static int imx_wm8960_late_probe(struct snd_soc_card *card)
-{
-	struct snd_soc_dai *codec_dai = card->rtd[0].codec_dai;
-	struct imx_priv *priv = &card_priv;
-	struct imx_wm8960_data *data = snd_soc_card_get_drvdata(card);
-	struct device *dev = &priv->pdev->dev;
-	int ret = 0;
-/*
-	ret = snd_soc_dai_set_sysclk(codec_dai, WM8960_SYSCLK_MCLK,
-			data->clk_frequency, SND_SOC_CLOCK_IN);
-	if (ret < 0)
-		dev_err(dev, "failed to set sysclk in %s\n", __func__);
-*/
-	return ret;
-}
-
 static int imx_wm8960_probe(struct platform_device *pdev)
 {
 	struct device_node *np = pdev->dev.of_node;
@@ -276,7 +260,6 @@ static int imx_wm8960_probe(struct platform_device *pdev)
 	data->card.dapm_widgets = imx_wm8960_dapm_widgets;
 	data->card.num_dapm_widgets = ARRAY_SIZE(imx_wm8960_dapm_widgets);
 
-	data->card.late_probe = imx_wm8960_late_probe;
 	data->card.set_bias_level = imx_wm8960_set_bias_level;
 
 	platform_set_drvdata(pdev, &data->card);

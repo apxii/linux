@@ -130,6 +130,7 @@
 		mux-int-port = <2>;
 		mux-ext-port = <3>;
 		hp-det-gpios = <&gpio3 31 GPIO_ACTIVE_LOW>;
+		status = "okay";
 	};
 
 	mxcfb1: fb@0 {
@@ -480,14 +481,9 @@
 	codec: wm8960@1a {
 		compatible = "wlf,wm8960";
 		reg = <0x1a>;
+		wlf,shared-lrclk;
+		wlf,capless;
 		clocks = <&clks 201>;
-		DCVDD-supply = <&reg_audio>;
-		DBVDD-supply = <&reg_audio>;
-		AVDD-supply = <&reg_audio>;
-		SPKVDD1-supply = <&reg_audio>;
-		SPKVDD2-supply = <&reg_audio>;
-		shared_lrclk;
-		/* capless; */
        };
 };
 
