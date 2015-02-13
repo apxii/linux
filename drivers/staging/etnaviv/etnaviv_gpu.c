@@ -400,17 +400,9 @@ static int etnaviv_hw_reset(struct etnaviv_gpu *gpu)
 	return 0;
 }
 
-int etnaviv_gpu_init(struct etnaviv_gpu *gpu)
+static void etnaviv_gpu_hw_init(struct etnaviv_gpu *gpu)
 {
-	int ret, i;
 	u32 words; /* 32 bit words */
-	struct iommu_domain *iommu;
-	bool mmuv2;
-
-	etnaviv_hw_identify(gpu);
-	ret = etnaviv_hw_reset(gpu);
-	if (ret)
-		return ret;
 
 	if (gpu->identity.model == chipModel_GC320 &&
 	    gpu_read(gpu, VIVS_HI_CHIP_TIME) != 0x2062400 &&
@@ -442,6 +434,33 @@ int etnaviv_gpu_init(struct etnaviv_gpu *gpu)
 	gpu_write(gpu, VIVS_MC_MEMORY_BASE_ADDR_TX, 0x0);
 	gpu_write(gpu, VIVS_MC_MEMORY_BASE_ADDR_PEZ, 0x0);
 	gpu_write(gpu, VIVS_MC_MEMORY_BASE_ADDR_PE, 0x0);
+
+	/* FIXME: we need to program the GPU table pointer(s) here */
+
+	/* Start command processor */
+	words = etnaviv_buffer_init(gpu);
+
+	/* convert number of 32 bit words to number of 64 bit words */
+	words = ALIGN(words, 2) / 2;
+
+	gpu_write(gpu, VIVS_HI_INTR_ENBL, ~0U);
+	gpu_write(gpu, VIVS_FE_COMMAND_ADDRESS,
+		  etnaviv_gem_paddr_locked(gpu->buffer));
+	gpu_write(gpu, VIVS_FE_COMMAND_CONTROL,
+		  VIVS_FE_COMMAND_CONTROL_ENABLE |
+		  VIVS_FE_COMMAND_CONTROL_PREFETCH(words));
+}
+
+int etnaviv_gpu_init(struct etnaviv_gpu *gpu)
+{
+	int ret, i;
+	struct iommu_domain *iommu;
+	bool mmuv2;
+
+	etnaviv_hw_identify(gpu);
+	ret = etnaviv_hw_reset(gpu);
+	if (ret)
+		return ret;
 
 	/* Setup IOMMU.. eventually we will (I think) do this once per context
 	 * and have separate page tables per context.  For now, to keep things
@@ -489,18 +508,8 @@ int etnaviv_gpu_init(struct etnaviv_gpu *gpu)
 		complete(&gpu->event_free);
 	}
 
-	/* Start command processor */
-	words = etnaviv_buffer_init(gpu);
-
-	/* convert number of 32 bit words to number of 64 bit words */
-	words = ALIGN(words, 2) / 2;
-
-	gpu_write(gpu, VIVS_HI_INTR_ENBL, ~0U);
-	gpu_write(gpu, VIVS_FE_COMMAND_ADDRESS,
-		  etnaviv_gem_paddr_locked(gpu->buffer));
-	gpu_write(gpu, VIVS_FE_COMMAND_CONTROL,
-		  VIVS_FE_COMMAND_CONTROL_ENABLE |
-		  VIVS_FE_COMMAND_CONTROL_PREFETCH(words));
+	/* Now program the hardware */
+	etnaviv_gpu_hw_init(gpu);
 
 	return 0;
 
