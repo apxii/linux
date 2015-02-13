@@ -890,12 +890,7 @@ int etnaviv_gpu_submit(struct etnaviv_gpu *gpu,
 {
 	struct drm_device *dev = gpu->drm;
 	struct etnaviv_drm_private *priv = dev->dev_private;
-	int ret = 0;
 	unsigned int event, i;
-
-	submit->fence = ++priv->next_fence;
-
-	gpu->submitted_fence = submit->fence;
 
 	/*
 	 * TODO
@@ -909,9 +904,12 @@ int etnaviv_gpu_submit(struct etnaviv_gpu *gpu,
 	event = event_alloc(gpu);
 	if (unlikely(event == ~0U)) {
 		DRM_ERROR("no free event\n");
-		ret = -EBUSY;
-		goto fail;
+		return -EBUSY;
 	}
+
+	submit->fence = ++priv->next_fence;
+
+	gpu->submitted_fence = submit->fence;
 
 	etnaviv_buffer_queue(gpu, event, submit);
 
@@ -942,8 +940,7 @@ int etnaviv_gpu_submit(struct etnaviv_gpu *gpu,
 	}
 	hangcheck_timer_reset(gpu);
 
-fail:
-	return ret;
+	return 0;
 }
 
 /*
