@@ -89,6 +89,7 @@ struct etnaviv_gpu {
 	struct device *dev;
 	struct etnaviv_chip_identity identity;
 	int pipe;
+	bool initialized;
 
 	/* 'ring'-buffer: */
 	struct drm_gem_object *buffer;
