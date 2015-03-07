@@ -140,8 +140,6 @@ static struct snd_soc_ops broadwell_rt286_ops = {
 
 static int broadwell_rtd_init(struct snd_soc_pcm_runtime *rtd)
 {
-	struct snd_soc_codec *codec = rtd->codec;
-	struct snd_soc_dapm_context *dapm = &codec->dapm;
 	struct sst_pdata *pdata = dev_get_platdata(rtd->platform->dev);
 	struct sst_hsw *broadwell = pdata->dsp;
 	int ret;
@@ -155,14 +153,6 @@ static int broadwell_rtd_init(struct snd_soc_pcm_runtime *rtd)
 		return ret;
 	}
 
-	/* always connected - check HP for jack detect */
-	snd_soc_dapm_enable_pin(dapm, "Headphone Jack");
-	snd_soc_dapm_enable_pin(dapm, "Speaker");
-	snd_soc_dapm_enable_pin(dapm, "Mic Jack");
-	snd_soc_dapm_enable_pin(dapm, "Line Jack");
-	snd_soc_dapm_enable_pin(dapm, "DMIC1");
-	snd_soc_dapm_enable_pin(dapm, "DMIC2");
-
 	return 0;
 }
 
@@ -171,7 +161,7 @@ static struct snd_soc_dai_link broadwell_rt286_dais[] = {
 	/* Front End DAI links */
 	{
 		.name = "System PCM",
-		.stream_name = "System Playback",
+		.stream_name = "System Playback/Capture",
 		.cpu_dai_name = "System Pin",
 		.platform_name = "haswell-pcm-audio",
 		.dynamic = 1,
@@ -180,6 +170,7 @@ static struct snd_soc_dai_link broadwell_rt286_dais[] = {
 		.init = broadwell_rtd_init,
 		.trigger = {SND_SOC_DPCM_TRIGGER_POST, SND_SOC_DPCM_TRIGGER_POST},
 		.dpcm_playback = 1,
+		.dpcm_capture = 1,
 	},
 	{
 		.name = "Offload0",
@@ -214,18 +205,6 @@ static struct snd_soc_dai_link broadwell_rt286_dais[] = {
 		.trigger = {SND_SOC_DPCM_TRIGGER_POST, SND_SOC_DPCM_TRIGGER_POST},
 		.dpcm_capture = 1,
 	},
-	{
-		.name = "Capture PCM",
-		.stream_name = "Capture",
-		.cpu_dai_name = "Capture Pin",
-		.platform_name = "haswell-pcm-audio",
-		.dynamic = 1,
-		.codec_name = "snd-soc-dummy",
-		.codec_dai_name = "snd-soc-dummy-dai",
-		.trigger = {SND_SOC_DPCM_TRIGGER_POST, SND_SOC_DPCM_TRIGGER_POST},
-		.dpcm_capture = 1,
-	},
-
 	/* Back End DAI links */
 	{
 		/* SSP0 - Codec */
@@ -281,7 +260,6 @@ static struct platform_driver broadwell_audio = {
 	.remove = broadwell_audio_remove,
 	.driver = {
 		.name = "broadwell-audio",
-		.owner = THIS_MODULE,
 	},
 };
 

@@ -11,36 +11,17 @@
 #include "rsnd.h"
 
 #define RSND_DVC_NAME_SIZE	16
-#define RSND_DVC_CHANNELS	2
 
 #define DVC_NAME "dvc"
-
-struct rsnd_dvc_cfg {
-	unsigned int max;
-	unsigned int size;
-	u32 *val;
-	const char * const *texts;
-};
-
-struct rsnd_dvc_cfg_m {
-	struct rsnd_dvc_cfg cfg;
-	u32 val[RSND_DVC_CHANNELS];
-};
-
-struct rsnd_dvc_cfg_s {
-	struct rsnd_dvc_cfg cfg;
-	u32 val;
-};
 
 struct rsnd_dvc {
 	struct rsnd_dvc_platform_info *info; /* rcar_snd.h */
 	struct rsnd_mod mod;
-	struct clk *clk;
-	struct rsnd_dvc_cfg_m volume;
-	struct rsnd_dvc_cfg_m mute;
-	struct rsnd_dvc_cfg_s ren;	/* Ramp Enable */
-	struct rsnd_dvc_cfg_s rup;	/* Ramp Rate Up */
-	struct rsnd_dvc_cfg_s rdown;	/* Ramp Rate Down */
+	struct rsnd_kctrl_cfg_m volume;
+	struct rsnd_kctrl_cfg_m mute;
+	struct rsnd_kctrl_cfg_s ren;	/* Ramp Enable */
+	struct rsnd_kctrl_cfg_s rup;	/* Ramp Rate Up */
+	struct rsnd_kctrl_cfg_s rdown;	/* Ramp Rate Down */
 };
 
 #define rsnd_mod_to_dvc(_mod)	\
@@ -136,9 +117,8 @@ static void rsnd_dvc_volume_update(struct rsnd_mod *mod)
 }
 
 static int rsnd_dvc_probe_gen2(struct rsnd_mod *mod,
-			       struct rsnd_dai *rdai)
+			       struct rsnd_priv *priv)
 {
-	struct rsnd_priv *priv = rsnd_mod_to_priv(mod);
 	struct device *dev = rsnd_priv_to_dev(priv);
 
 	dev_dbg(dev, "%s[%d] (Gen2) is probed\n",
@@ -147,12 +127,24 @@ static int rsnd_dvc_probe_gen2(struct rsnd_mod *mod,
 	return 0;
 }
 
-static int rsnd_dvc_init(struct rsnd_mod *dvc_mod,
-			 struct rsnd_dai *rdai)
+static int rsnd_dvc_remove_gen2(struct rsnd_mod *mod,
+				struct rsnd_priv *priv)
 {
-	struct rsnd_dvc *dvc = rsnd_mod_to_dvc(dvc_mod);
+	struct rsnd_dvc *dvc = rsnd_mod_to_dvc(mod);
+
+	rsnd_kctrl_remove(dvc->volume);
+	rsnd_kctrl_remove(dvc->mute);
+	rsnd_kctrl_remove(dvc->ren);
+	rsnd_kctrl_remove(dvc->rup);
+	rsnd_kctrl_remove(dvc->rdown);
+
+	return 0;
+}
+
+static int rsnd_dvc_init(struct rsnd_mod *dvc_mod,
+			 struct rsnd_priv *priv)
+{
 	struct rsnd_dai_stream *io = rsnd_mod_to_io(dvc_mod);
-	struct rsnd_priv *priv = rsnd_mod_to_priv(dvc_mod);
 	struct rsnd_mod *src_mod = rsnd_io_to_mod_src(io);
 	struct device *dev = rsnd_priv_to_dev(priv);
 	int dvc_id = rsnd_mod_id(dvc_mod);
@@ -171,7 +163,7 @@ static int rsnd_dvc_init(struct rsnd_mod *dvc_mod,
 		return -EINVAL;
 	}
 
-	clk_prepare_enable(dvc->clk);
+	rsnd_mod_hw_start(dvc_mod);
 
 	/*
 	 * fixme
@@ -191,23 +183,21 @@ static int rsnd_dvc_init(struct rsnd_mod *dvc_mod,
 
 	rsnd_mod_write(dvc_mod, DVC_DVUIR, 0);
 
-	rsnd_adg_set_cmd_timsel_gen2(rdai, dvc_mod, io);
+	rsnd_adg_set_cmd_timsel_gen2(dvc_mod, io);
 
 	return 0;
 }
 
 static int rsnd_dvc_quit(struct rsnd_mod *mod,
-			 struct rsnd_dai *rdai)
+			 struct rsnd_priv *priv)
 {
-	struct rsnd_dvc *dvc = rsnd_mod_to_dvc(mod);
-
-	clk_disable_unprepare(dvc->clk);
+	rsnd_mod_hw_stop(mod);
 
 	return 0;
 }
 
 static int rsnd_dvc_start(struct rsnd_mod *mod,
-			  struct rsnd_dai *rdai)
+			  struct rsnd_priv *priv)
 {
 	rsnd_mod_write(mod, CMD_CTRL, 0x10);
 
@@ -215,191 +205,62 @@ static int rsnd_dvc_start(struct rsnd_mod *mod,
 }
 
 static int rsnd_dvc_stop(struct rsnd_mod *mod,
-			 struct rsnd_dai *rdai)
+			 struct rsnd_priv *priv)
 {
 	rsnd_mod_write(mod, CMD_CTRL, 0);
 
 	return 0;
 }
 
-static int rsnd_dvc_volume_info(struct snd_kcontrol *kctrl,
-			       struct snd_ctl_elem_info *uinfo)
-{
-	struct rsnd_dvc_cfg *cfg = (struct rsnd_dvc_cfg *)kctrl->private_value;
-
-	if (cfg->texts) {
-		uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
-		uinfo->count = cfg->size;
-		uinfo->value.enumerated.items = cfg->max;
-		if (uinfo->value.enumerated.item >= cfg->max)
-			uinfo->value.enumerated.item = cfg->max - 1;
-		strlcpy(uinfo->value.enumerated.name,
-			cfg->texts[uinfo->value.enumerated.item],
-			sizeof(uinfo->value.enumerated.name));
-	} else {
-		uinfo->count = cfg->size;
-		uinfo->value.integer.min = 0;
-		uinfo->value.integer.max = cfg->max;
-		uinfo->type = (cfg->max == 1) ?
-			SNDRV_CTL_ELEM_TYPE_BOOLEAN :
-			SNDRV_CTL_ELEM_TYPE_INTEGER;
-	}
-
-	return 0;
-}
-
-static int rsnd_dvc_volume_get(struct snd_kcontrol *kctrl,
-			      struct snd_ctl_elem_value *ucontrol)
-{
-	struct rsnd_dvc_cfg *cfg = (struct rsnd_dvc_cfg *)kctrl->private_value;
-	int i;
-
-	for (i = 0; i < cfg->size; i++)
-		if (cfg->texts)
-			ucontrol->value.enumerated.item[i] = cfg->val[i];
-		else
-			ucontrol->value.integer.value[i] = cfg->val[i];
-
-	return 0;
-}
-
-static int rsnd_dvc_volume_put(struct snd_kcontrol *kctrl,
-			      struct snd_ctl_elem_value *ucontrol)
-{
-	struct rsnd_mod *mod = snd_kcontrol_chip(kctrl);
-	struct rsnd_dvc_cfg *cfg = (struct rsnd_dvc_cfg *)kctrl->private_value;
-	int i, change = 0;
-
-	for (i = 0; i < cfg->size; i++) {
-		if (cfg->texts) {
-			change |= (ucontrol->value.enumerated.item[i] != cfg->val[i]);
-			cfg->val[i] = ucontrol->value.enumerated.item[i];
-		} else {
-			change |= (ucontrol->value.integer.value[i] != cfg->val[i]);
-			cfg->val[i] = ucontrol->value.integer.value[i];
-		}
-	}
-
-	if (change)
-		rsnd_dvc_volume_update(mod);
-
-	return change;
-}
-
-static int __rsnd_dvc_pcm_new(struct rsnd_mod *mod,
-			      struct rsnd_dai *rdai,
-			      struct snd_soc_pcm_runtime *rtd,
-			      const unsigned char *name,
-			      struct rsnd_dvc_cfg *private)
-{
-	struct snd_card *card = rtd->card->snd_card;
-	struct snd_kcontrol *kctrl;
-	struct snd_kcontrol_new knew = {
-		.iface		= SNDRV_CTL_ELEM_IFACE_MIXER,
-		.name		= name,
-		.info		= rsnd_dvc_volume_info,
-		.get		= rsnd_dvc_volume_get,
-		.put		= rsnd_dvc_volume_put,
-		.private_value	= (unsigned long)private,
-	};
-	int ret;
-
-	kctrl = snd_ctl_new1(&knew, mod);
-	if (!kctrl)
-		return -ENOMEM;
-
-	ret = snd_ctl_add(card, kctrl);
-	if (ret < 0)
-		return ret;
-
-	return 0;
-}
-
-static int _rsnd_dvc_pcm_new_m(struct rsnd_mod *mod,
-			       struct rsnd_dai *rdai,
-			       struct snd_soc_pcm_runtime *rtd,
-			       const unsigned char *name,
-			       struct rsnd_dvc_cfg_m *private,
-			       u32 max)
-{
-	private->cfg.max	= max;
-	private->cfg.size	= RSND_DVC_CHANNELS;
-	private->cfg.val	= private->val;
-	return __rsnd_dvc_pcm_new(mod, rdai, rtd, name, &private->cfg);
-}
-
-static int _rsnd_dvc_pcm_new_s(struct rsnd_mod *mod,
-			       struct rsnd_dai *rdai,
-			       struct snd_soc_pcm_runtime *rtd,
-			       const unsigned char *name,
-			       struct rsnd_dvc_cfg_s *private,
-			       u32 max)
-{
-	private->cfg.max	= max;
-	private->cfg.size	= 1;
-	private->cfg.val	= &private->val;
-	return __rsnd_dvc_pcm_new(mod, rdai, rtd, name, &private->cfg);
-}
-
-static int _rsnd_dvc_pcm_new_e(struct rsnd_mod *mod,
-			       struct rsnd_dai *rdai,
-			       struct snd_soc_pcm_runtime *rtd,
-			       const unsigned char *name,
-			       struct rsnd_dvc_cfg_s *private,
-			       const char * const *texts,
-			       u32 max)
-{
-	private->cfg.max	= max;
-	private->cfg.size	= 1;
-	private->cfg.val	= &private->val;
-	private->cfg.texts	= texts;
-	return __rsnd_dvc_pcm_new(mod, rdai, rtd, name, &private->cfg);
-}
-
 static int rsnd_dvc_pcm_new(struct rsnd_mod *mod,
-			    struct rsnd_dai *rdai,
 			    struct snd_soc_pcm_runtime *rtd)
 {
 	struct rsnd_dai_stream *io = rsnd_mod_to_io(mod);
 	struct rsnd_dvc *dvc = rsnd_mod_to_dvc(mod);
+	int is_play = rsnd_io_is_play(io);
 	int ret;
 
 	/* Volume */
-	ret = _rsnd_dvc_pcm_new_m(mod, rdai, rtd,
-			rsnd_dai_is_play(rdai, io) ?
+	ret = rsnd_kctrl_new_m(mod, rtd,
+			is_play ?
 			"DVC Out Playback Volume" : "DVC In Capture Volume",
+			rsnd_dvc_volume_update,
 			&dvc->volume, 0x00800000 - 1);
 	if (ret < 0)
 		return ret;
 
 	/* Mute */
-	ret = _rsnd_dvc_pcm_new_m(mod, rdai, rtd,
-			rsnd_dai_is_play(rdai, io) ?
+	ret = rsnd_kctrl_new_m(mod, rtd,
+			is_play ?
 			"DVC Out Mute Switch" : "DVC In Mute Switch",
+			rsnd_dvc_volume_update,
 			&dvc->mute, 1);
 	if (ret < 0)
 		return ret;
 
 	/* Ramp */
-	ret = _rsnd_dvc_pcm_new_s(mod, rdai, rtd,
-			rsnd_dai_is_play(rdai, io) ?
+	ret = rsnd_kctrl_new_s(mod, rtd,
+			is_play ?
 			"DVC Out Ramp Switch" : "DVC In Ramp Switch",
+			rsnd_dvc_volume_update,
 			&dvc->ren, 1);
 	if (ret < 0)
 		return ret;
 
-	ret = _rsnd_dvc_pcm_new_e(mod, rdai, rtd,
-			rsnd_dai_is_play(rdai, io) ?
+	ret = rsnd_kctrl_new_e(mod, rtd,
+			is_play ?
 			"DVC Out Ramp Up Rate" : "DVC In Ramp Up Rate",
 			&dvc->rup,
+			rsnd_dvc_volume_update,
 			dvc_ramp_rate, ARRAY_SIZE(dvc_ramp_rate));
 	if (ret < 0)
 		return ret;
 
-	ret = _rsnd_dvc_pcm_new_e(mod, rdai, rtd,
-			rsnd_dai_is_play(rdai, io) ?
+	ret = rsnd_kctrl_new_e(mod, rtd,
+			is_play ?
 			"DVC Out Ramp Down Rate" : "DVC In Ramp Down Rate",
 			&dvc->rdown,
+			rsnd_dvc_volume_update,
 			dvc_ramp_rate, ARRAY_SIZE(dvc_ramp_rate));
 
 	if (ret < 0)
@@ -411,6 +272,7 @@ static int rsnd_dvc_pcm_new(struct rsnd_mod *mod,
 static struct rsnd_mod_ops rsnd_dvc_ops = {
 	.name		= DVC_NAME,
 	.probe		= rsnd_dvc_probe_gen2,
+	.remove		= rsnd_dvc_remove_gen2,
 	.init		= rsnd_dvc_init,
 	.quit		= rsnd_dvc_quit,
 	.start		= rsnd_dvc_start,
@@ -503,9 +365,9 @@ int rsnd_dvc_probe(struct platform_device *pdev,
 			return PTR_ERR(clk);
 
 		dvc->info = &info->dvc_info[i];
-		dvc->clk  = clk;
 
-		rsnd_mod_init(priv, &dvc->mod, &rsnd_dvc_ops, RSND_MOD_DVC, i);
+		rsnd_mod_init(&dvc->mod, &rsnd_dvc_ops,
+			      clk, RSND_MOD_DVC, i);
 
 		dev_dbg(dev, "CMD%d probed\n", i);
 	}

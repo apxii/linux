@@ -428,14 +428,6 @@ static void elantech_report_trackpoint(struct psmouse *psmouse,
 	int x, y;
 	u32 t;
 
-	if (dev_WARN_ONCE(&psmouse->ps2dev.serio->dev,
-			  !tp_dev,
-			  psmouse_fmt("Unexpected trackpoint message\n"))) {
-		if (etd->debug == 1)
-			elantech_packet_dump(psmouse);
-		return;
-	}
-
 	t = get_unaligned_le32(&packet[0]);
 
 	switch (t & ~7U) {
@@ -793,7 +785,7 @@ static int elantech_packet_check_v4(struct psmouse *psmouse)
 	unsigned char packet_type = packet[3] & 0x03;
 	bool sanity_check;
 
-	if ((packet[3] & 0x0f) == 0x06)
+	if (etd->tp_dev && (packet[3] & 0x0f) == 0x06)
 		return PACKET_TRACKPOINT;
 
 	/*
@@ -1105,6 +1097,8 @@ static int elantech_get_resolution_v4(struct psmouse *psmouse,
  * Asus UX31               0x361f00        20, 15, 0e      clickpad
  * Asus UX32VD             0x361f02        00, 15, 0e      clickpad
  * Avatar AVIU-145A2       0x361f00        ?               clickpad
+ * Fujitsu LIFEBOOK E544   0x470f00        d0, 12, 09      2 hw buttons
+ * Fujitsu LIFEBOOK E554   0x570f01        40, 14, 0c      2 hw buttons
  * Fujitsu H730            0x570f00        c0, 14, 0c      3 hw buttons (**)
  * Gigabyte U2442          0x450f01        58, 17, 0c      2 hw buttons
  * Lenovo L430             0x350f02        b9, 15, 0c      2 hw buttons (*)
@@ -1483,6 +1477,20 @@ static const struct dmi_system_id elantech_dmi_force_crc_enabled[] = {
 			DMI_MATCH(DMI_PRODUCT_NAME, "CELSIUS H730"),
 		},
 	},
+	{
+		/* Fujitsu LIFEBOOK E554  does not work with crc_enabled == 0 */
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
+			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK E554"),
+		},
+	},
+	{
+		/* Fujitsu LIFEBOOK E544  does not work with crc_enabled == 0 */
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
+			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK E544"),
+		},
+	},
 #endif
 	{ }
 };
@@ -1528,6 +1536,8 @@ static int elantech_set_properties(struct elantech_data *etd)
 		case 7:
 		case 8:
 		case 9:
+		case 10:
+		case 13:
 			etd->hw_version = 4;
 			break;
 		default:

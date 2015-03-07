@@ -160,7 +160,7 @@ struct fsl_ssi_soc_data {
  */
 struct fsl_ssi_private {
 	struct regmap *regs;
-	unsigned int irq;
+	int irq;
 	struct snd_soc_dai_driver cpu_dai_drv;
 
 	unsigned int dai_fmt;
@@ -603,16 +603,19 @@ static int fsl_ssi_set_bclk(struct snd_pcm_substream *substream,
 	factor = (div2 + 1) * (7 * psr + 1) * 2;
 
 	for (i = 0; i < 255; i++) {
-		/* The bclk rate must be smaller than 1/5 sysclk rate */
-		if (factor * (i + 1) < 5)
-			continue;
-
 		tmprate = freq * factor * (i + 2);
 
 		if (baudclk_is_used)
 			clkrate = clk_get_rate(ssi_private->baudclk);
 		else
 			clkrate = clk_round_rate(ssi_private->baudclk, tmprate);
+
+		/*
+		 * Hardware limitation: The bclk rate must be
+		 * never greater than 1/5 IPG clock rate
+		 */
+		if (clkrate * 5 > clk_get_rate(ssi_private->clk))
+			continue;
 
 		clkrate /= factor;
 		afreq = clkrate / (i + 1);
@@ -992,8 +995,8 @@ static int fsl_ssi_set_dai_tdm_slot(struct snd_soc_dai *cpu_dai, u32 tx_mask,
 	regmap_update_bits(regs, CCSR_SSI_SCR, CCSR_SSI_SCR_SSIEN,
 			CCSR_SSI_SCR_SSIEN);
 
-	regmap_write(regs, CCSR_SSI_STMSK, tx_mask);
-	regmap_write(regs, CCSR_SSI_SRMSK, rx_mask);
+	regmap_write(regs, CCSR_SSI_STMSK, ~tx_mask);
+	regmap_write(regs, CCSR_SSI_SRMSK, ~rx_mask);
 
 	regmap_update_bits(regs, CCSR_SSI_SCR, CCSR_SSI_SCR_SSIEN, val);
 
@@ -1361,10 +1364,10 @@ static int fsl_ssi_probe(struct platform_device *pdev)
 		return PTR_ERR(ssi_private->regs);
 	}
 
-	ssi_private->irq = irq_of_parse_and_map(np, 0);
+	ssi_private->irq = platform_get_irq(pdev, 0);
 	if (!ssi_private->irq) {
-		dev_err(&pdev->dev, "no irq for node %s\n", np->full_name);
-		return -ENXIO;
+		dev_err(&pdev->dev, "no irq for node %s\n", pdev->name);
+		return ssi_private->irq;
 	}
 
 	/* Are the RX and the TX clocks locked? */
@@ -1387,7 +1390,7 @@ static int fsl_ssi_probe(struct platform_device *pdev)
 	if (ssi_private->soc->imx) {
 		ret = fsl_ssi_imx_probe(pdev, ssi_private, iomem);
 		if (ret)
-			goto error_irqmap;
+			return ret;
 	}
 
 	ret = snd_soc_register_component(&pdev->dev, &fsl_ssi_component,
@@ -1410,7 +1413,7 @@ static int fsl_ssi_probe(struct platform_device *pdev)
 
 	ret = fsl_ssi_debugfs_create(&ssi_private->dbg_stats, &pdev->dev);
 	if (ret)
-		goto error_asoc_register;
+		goto error_irq;
 
 	/*
 	 * If codec-handle property is missing from SSI node, we assume
@@ -1458,10 +1461,6 @@ error_asoc_register:
 	if (ssi_private->soc->imx)
 		fsl_ssi_imx_clean(pdev, ssi_private);
 
-error_irqmap:
-	if (ssi_private->use_dma)
-		irq_dispose_mapping(ssi_private->irq);
-
 	return ret;
 }
 
@@ -1478,16 +1477,12 @@ static int fsl_ssi_remove(struct platform_device *pdev)
 	if (ssi_private->soc->imx)
 		fsl_ssi_imx_clean(pdev, ssi_private);
 
-	if (ssi_private->use_dma)
-		irq_dispose_mapping(ssi_private->irq);
-
 	return 0;
 }
 
 static struct platform_driver fsl_ssi_driver = {
 	.driver = {
 		.name = "fsl-ssi-dai",
-		.owner = THIS_MODULE,
 		.of_match_table = fsl_ssi_ids,
 	},
 	.probe = fsl_ssi_probe,
