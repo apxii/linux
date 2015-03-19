@@ -32,7 +32,7 @@ static void etnaviv_gem_scatter_map(struct etnaviv_gem_object *etnaviv_obj)
 	 * For non-cached buffers, ensure the new pages are clean
 	 * because display controller, GPU, etc. are not coherent.
 	 */
-	if (etnaviv_obj->flags & (ETNA_BO_WC|ETNA_BO_CACHED)) {
+	if (etnaviv_obj->flags & (ETNA_BO_WC|ETNA_BO_UNCACHED)) {
 		dma_map_sg(dev->dev, sgt->sgl, sgt->nents, DMA_BIDIRECTIONAL);
 		dma_unmap_sg(dev->dev, sgt->sgl, sgt->nents, DMA_BIDIRECTIONAL);
 	} else {
