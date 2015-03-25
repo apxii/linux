@@ -503,7 +503,7 @@ int etnaviv_gpu_init(struct etnaviv_gpu *gpu)
 
 	/* TODO: we will leak here memory - fix it! */
 
-	gpu->mmu = etnaviv_iommu_new(gpu->drm, iommu);
+	gpu->mmu = etnaviv_iommu_new(gpu->dev, iommu);
 	if (!gpu->mmu) {
 		ret = -ENOMEM;
 		goto fail;

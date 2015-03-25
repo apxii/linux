@@ -248,7 +248,7 @@ void etnaviv_iommu_destroy(struct etnaviv_iommu *mmu)
 	kfree(mmu);
 }
 
-struct etnaviv_iommu *etnaviv_iommu_new(struct drm_device *dev,
+struct etnaviv_iommu *etnaviv_iommu_new(struct device *dev,
 	struct iommu_domain *domain)
 {
 	struct etnaviv_iommu *mmu;

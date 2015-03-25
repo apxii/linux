@@ -23,7 +23,7 @@
 struct etnaviv_vram_mapping;
 
 struct etnaviv_iommu {
-	struct drm_device *dev;
+	struct device *dev;
 	struct iommu_domain *domain;
 
 	/* memory manager for GPU address area */
@@ -48,7 +48,7 @@ void etnaviv_iommu_unmap_gem(struct etnaviv_iommu *mmu,
 	struct etnaviv_vram_mapping *mapping);
 void etnaviv_iommu_destroy(struct etnaviv_iommu *iommu);
 
-struct etnaviv_iommu *etnaviv_iommu_new(struct drm_device *dev,
+struct etnaviv_iommu *etnaviv_iommu_new(struct device *dev,
 	struct iommu_domain *domain);
 
 #endif /* __ETNAVIV_MMU_H__ */
