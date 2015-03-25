@@ -301,19 +301,12 @@ static void etnaviv_debugfs_cleanup(struct drm_minor *minor)
 /*
  * Fences:
  */
-int etnaviv_wait_fence_interruptable(struct drm_device *dev, uint32_t pipe,
-		uint32_t fence, struct timespec *timeout)
+int etnaviv_wait_fence_interruptable(struct drm_device *dev,
+		struct etnaviv_gpu *gpu, uint32_t fence,
+		struct timespec *timeout)
 {
 	struct etnaviv_drm_private *priv = dev->dev_private;
-	struct etnaviv_gpu *gpu;
 	int ret;
-
-	if (pipe >= ETNA_MAX_PIPES)
-		return -EINVAL;
-
-	gpu = priv->gpu[pipe];
-	if (!gpu)
-		return -ENXIO;
 
 	if (fence_after(fence, gpu->submitted_fence)) {
 		DRM_ERROR("waiting on invalid fence: %u (of %u)\n",
@@ -458,9 +451,18 @@ static int etnaviv_ioctl_gem_info(struct drm_device *dev, void *data,
 static int etnaviv_ioctl_wait_fence(struct drm_device *dev, void *data,
 		struct drm_file *file)
 {
+	struct etnaviv_drm_private *priv = dev->dev_private;
+	struct etnaviv_gpu *gpu;
 	struct drm_etnaviv_wait_fence *args = data;
 
-	return etnaviv_wait_fence_interruptable(dev, args->pipe, args->fence,
+	if (args->pipe >= ETNA_MAX_PIPES)
+		return -EINVAL;
+
+	gpu = priv->gpu[args->pipe];
+	if (!gpu)
+		return -ENODEV;
+
+	return etnaviv_wait_fence_interruptable(dev, gpu, args->fence,
 						&TS(args->timeout));
 }
 
