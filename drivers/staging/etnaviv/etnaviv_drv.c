@@ -141,8 +141,10 @@ static int etnaviv_load(struct drm_device *dev, unsigned long flags)
 	mutex_lock(&dev->struct_mutex);
 
 	err = component_bind_all(dev->dev, dev);
-	if (err < 0)
+	if (err < 0) {
+		mutex_unlock(&dev->struct_mutex);
 		return err;
+	}
 
 	load_gpu(dev);
 
