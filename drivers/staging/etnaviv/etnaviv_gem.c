@@ -288,7 +288,7 @@ static uint64_t mmap_offset(struct drm_gem_object *obj)
 	return drm_vma_node_offset_addr(&obj->vma_node);
 }
 
-uint64_t msm_gem_mmap_offset(struct drm_gem_object *obj)
+uint64_t etnaviv_gem_mmap_offset(struct drm_gem_object *obj)
 {
 	uint64_t offset;
 
@@ -476,7 +476,7 @@ int etnaviv_gem_cpu_fini(struct drm_gem_object *obj)
 }
 
 #ifdef CONFIG_DEBUG_FS
-void msm_gem_describe(struct drm_gem_object *obj, struct seq_file *m)
+void etnaviv_gem_describe(struct drm_gem_object *obj, struct seq_file *m)
 {
 	struct drm_device *dev = obj->dev;
 	struct etnaviv_gem_object *etnaviv_obj = to_etnaviv_bo(obj);
@@ -491,7 +491,7 @@ void msm_gem_describe(struct drm_gem_object *obj, struct seq_file *m)
 			off, etnaviv_obj->vaddr, obj->size);
 }
 
-void msm_gem_describe_objects(struct list_head *list, struct seq_file *m)
+void etnaviv_gem_describe_objects(struct list_head *list, struct seq_file *m)
 {
 	struct etnaviv_gem_object *etnaviv_obj;
 	int count = 0;
@@ -501,7 +501,7 @@ void msm_gem_describe_objects(struct list_head *list, struct seq_file *m)
 		struct drm_gem_object *obj = &etnaviv_obj->base;
 
 		seq_puts(m, "   ");
-		msm_gem_describe(obj, m);
+		etnaviv_gem_describe(obj, m);
 		count++;
 		size += obj->size;
 	}

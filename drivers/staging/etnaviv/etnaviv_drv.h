@@ -74,7 +74,7 @@ int etnaviv_ioctl_gem_submit(struct drm_device *dev, void *data,
 
 int etnaviv_gem_mmap(struct file *filp, struct vm_area_struct *vma);
 int etnaviv_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf);
-uint64_t msm_gem_mmap_offset(struct drm_gem_object *obj);
+uint64_t etnaviv_gem_mmap_offset(struct drm_gem_object *obj);
 int etnaviv_gem_get_iova_locked(struct etnaviv_gpu *gpu,
 	struct drm_gem_object *obj, uint32_t *iova);
 int etnaviv_gem_get_iova(struct etnaviv_gpu *gpu, struct drm_gem_object *obj,
@@ -111,9 +111,8 @@ bool etnaviv_cmd_validate_one(struct etnaviv_gpu *gpu,
 	struct etnaviv_gem_object *obj, unsigned int offset, unsigned int size);
 
 #ifdef CONFIG_DEBUG_FS
-void msm_gem_describe(struct drm_gem_object *obj, struct seq_file *m);
-void msm_gem_describe_objects(struct list_head *list, struct seq_file *m);
-void msm_framebuffer_describe(struct drm_framebuffer *fb, struct seq_file *m);
+void etnaviv_gem_describe(struct drm_gem_object *obj, struct seq_file *m);
+void etnaviv_gem_describe_objects(struct list_head *list, struct seq_file *m);
 #endif
 
 void __iomem *etnaviv_ioremap(struct platform_device *pdev, const char *name,

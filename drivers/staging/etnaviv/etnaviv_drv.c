@@ -212,12 +212,12 @@ static int etnaviv_gem_show(struct drm_device *dev, struct seq_file *m)
 		if (gpu) {
 			seq_printf(m, "Active Objects (%s):\n",
 				   dev_name(gpu->dev));
-			msm_gem_describe_objects(&gpu->active_list, m);
+			etnaviv_gem_describe_objects(&gpu->active_list, m);
 		}
 	}
 
 	seq_puts(m, "Inactive Objects:\n");
-	msm_gem_describe_objects(&priv->inactive_list, m);
+	etnaviv_gem_describe_objects(&priv->inactive_list, m);
 
 	return 0;
 }
@@ -437,7 +437,7 @@ static int etnaviv_ioctl_gem_info(struct drm_device *dev, void *data,
 	if (!obj)
 		return -ENOENT;
 
-	args->offset = msm_gem_mmap_offset(obj);
+	args->offset = etnaviv_gem_mmap_offset(obj);
 
 	drm_gem_object_unreference_unlocked(obj);
 
