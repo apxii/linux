@@ -269,14 +269,7 @@ static int submit_reloc(struct etnaviv_gem_submit *submit, struct etnaviv_gem_ob
 			return -EINVAL;
 		}
 
-		iova += submit_reloc.reloc_offset;
-
-		if (submit_reloc.shift < 0)
-			iova >>= -submit_reloc.shift;
-		else
-			iova <<= submit_reloc.shift;
-
-		ptr[off] = iova | submit_reloc.or;
+		ptr[off] = iova + submit_reloc.reloc_offset;
 
 		last_offset = off;
 	}
