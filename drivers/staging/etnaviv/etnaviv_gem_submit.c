@@ -377,8 +377,11 @@ int etnaviv_ioctl_gem_submit(struct drm_device *dev, void *data,
 
 		/*
 		 * We must have space to add a LINK command at the end of
-		 * the command buffer.
+		 * the command buffer. Align buffer size to the next 64bit
+		 * quantity, as that's the point where we need to insert the
+		 * next command.
 		 */
+		submit_cmd.size = ALIGN(submit_cmd.size, 8);
 		max_size = etnaviv_obj->base.size - 8;
 
 		if (submit_cmd.size > max_size ||
