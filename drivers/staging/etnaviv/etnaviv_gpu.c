@@ -21,7 +21,6 @@
 #include "etnaviv_gem.h"
 #include "etnaviv_mmu.h"
 #include "etnaviv_iommu.h"
-#include "etnaviv_iommu_v2.h"
 #include "common.xml.h"
 #include "state.xml.h"
 #include "state_hi.xml.h"
@@ -329,10 +328,13 @@ int etnaviv_gpu_init(struct etnaviv_gpu *gpu)
 	mmuv2 = gpu->identity.minor_features1 & chipMinorFeatures1_MMU_VERSION;
 	dev_dbg(gpu->dev->dev, "mmuv2: %d\n", mmuv2);
 
-	if (!mmuv2)
+	if (!mmuv2) {
 		iommu = etnaviv_iommu_domain_alloc(gpu);
-	else
-		iommu = etnaviv_iommu_v2_domain_alloc(gpu);
+	} else {
+		dev_err(gpu->dev, "IOMMUv2 support is not implemented yet!\n");
+		ret = -ENODEV;
+		goto fail;
+	}
 
 	if (!iommu) {
 		ret = -ENOMEM;
