@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2013 Red Hat
- * Author: Rob Clark <robdclark@gmail.com>
+ * Copyright (C) 2015 Etnaviv Project
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published by
@@ -20,7 +19,7 @@
 #include "etnaviv_gem.h"
 
 
-struct sg_table *msm_gem_prime_get_sg_table(struct drm_gem_object *obj)
+struct sg_table *etnaviv_gem_prime_get_sg_table(struct drm_gem_object *obj)
 {
 	struct etnaviv_gem_object *etnaviv_obj = to_etnaviv_bo(obj);
 
@@ -29,17 +28,17 @@ struct sg_table *msm_gem_prime_get_sg_table(struct drm_gem_object *obj)
 	return etnaviv_obj->sgt;
 }
 
-void *msm_gem_prime_vmap(struct drm_gem_object *obj)
+void *etnaviv_gem_prime_vmap(struct drm_gem_object *obj)
 {
-	return msm_gem_vaddr(obj);
+	return etnaviv_gem_vaddr(obj);
 }
 
-void msm_gem_prime_vunmap(struct drm_gem_object *obj, void *vaddr)
+void etnaviv_gem_prime_vunmap(struct drm_gem_object *obj, void *vaddr)
 {
-	/* TODO msm_gem_vunmap() */
+	/* TODO etnaviv_gem_vunmap() */
 }
 
-int msm_gem_prime_pin(struct drm_gem_object *obj)
+int etnaviv_gem_prime_pin(struct drm_gem_object *obj)
 {
 	if (!obj->import_attach) {
 		struct drm_device *dev = obj->dev;
@@ -51,7 +50,7 @@ int msm_gem_prime_pin(struct drm_gem_object *obj)
 	return 0;
 }
 
-void msm_gem_prime_unpin(struct drm_gem_object *obj)
+void etnaviv_gem_prime_unpin(struct drm_gem_object *obj)
 {
 	if (!obj->import_attach) {
 		struct drm_device *dev = obj->dev;
