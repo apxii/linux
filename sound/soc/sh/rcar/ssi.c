@@ -416,11 +416,14 @@ static irqreturn_t rsnd_ssi_interrupt(int irq, void *data)
 		/*
 		 * restart SSI
 		 */
-		rsnd_ssi_stop(mod, priv);
-		rsnd_ssi_start(mod, priv);
-
 		dev_dbg(dev, "%s[%d] restart\n",
 			rsnd_mod_name(mod), rsnd_mod_id(mod));
+
+		rsnd_ssi_stop(mod, priv);
+		if (ssi->err < 1024)
+			rsnd_ssi_start(mod, priv);
+		else
+			dev_warn(dev, "no more SSI restart\n");
 	}
 
 	rsnd_ssi_record_error(ssi, status);
@@ -442,12 +445,6 @@ static int rsnd_ssi_pio_probe(struct rsnd_mod *mod,
 			       rsnd_ssi_interrupt,
 			       IRQF_SHARED,
 			       dev_name(dev), ssi);
-	if (ret)
-		dev_err(dev, "%s[%d] (PIO) request interrupt failed\n",
-			rsnd_mod_name(mod), rsnd_mod_id(mod));
-	else
-		dev_dbg(dev, "%s[%d] (PIO) is probed\n",
-			rsnd_mod_name(mod), rsnd_mod_id(mod));
 
 	return ret;
 }
@@ -474,22 +471,11 @@ static int rsnd_ssi_dma_probe(struct rsnd_mod *mod,
 			       IRQF_SHARED,
 			       dev_name(dev), ssi);
 	if (ret)
-		goto rsnd_ssi_dma_probe_fail;
+		return ret;
 
 	ret = rsnd_dma_init(
 		priv, rsnd_mod_to_dma(mod),
 		dma_id);
-	if (ret)
-		goto rsnd_ssi_dma_probe_fail;
-
-	dev_dbg(dev, "%s[%d] (DMA) is probed\n",
-		rsnd_mod_name(mod), rsnd_mod_id(mod));
-
-	return ret;
-
-rsnd_ssi_dma_probe_fail:
-	dev_err(dev, "%s[%d] (DMA) is failed\n",
-		rsnd_mod_name(mod), rsnd_mod_id(mod));
 
 	return ret;
 }
@@ -707,7 +693,7 @@ int rsnd_ssi_probe(struct platform_device *pdev,
 	struct clk *clk;
 	struct rsnd_ssi *ssi;
 	char name[RSND_SSI_NAME_SIZE];
-	int i, nr;
+	int i, nr, ret;
 
 	rsnd_of_parse_ssi(pdev, of_data, priv);
 
@@ -742,10 +728,23 @@ int rsnd_ssi_probe(struct platform_device *pdev,
 		else if (rsnd_ssi_pio_available(ssi))
 			ops = &rsnd_ssi_pio_ops;
 
-		rsnd_mod_init(&ssi->mod, ops, clk, RSND_MOD_SSI, i);
+		ret = rsnd_mod_init(&ssi->mod, ops, clk, RSND_MOD_SSI, i);
+		if (ret)
+			return ret;
 
 		rsnd_ssi_parent_clk_setup(priv, ssi);
 	}
 
 	return 0;
+}
+
+void rsnd_ssi_remove(struct platform_device *pdev,
+		     struct rsnd_priv *priv)
+{
+	struct rsnd_ssi *ssi;
+	int i;
+
+	for_each_rsnd_ssi(ssi, priv, i) {
+		rsnd_mod_quit(&ssi->mod);
+	}
 }

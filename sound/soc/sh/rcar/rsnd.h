@@ -239,6 +239,9 @@ struct rsnd_mod_ops {
 		    struct rsnd_priv *priv);
 	int (*pcm_new)(struct rsnd_mod *mod,
 		       struct snd_soc_pcm_runtime *rtd);
+	int (*hw_params)(struct rsnd_mod *mod,
+			 struct snd_pcm_substream *substream,
+			 struct snd_pcm_hw_params *hw_params);
 	int (*fallback)(struct rsnd_mod *mod,
 			struct rsnd_priv *priv);
 };
@@ -262,6 +265,9 @@ struct rsnd_mod {
  * 2	0: start	1: stop
  * 3	0: pcm_new
  * 4	0: fallback
+ *
+ * 31 bit is always called (see __rsnd_mod_call)
+ * 31	0: hw_params
  */
 #define __rsnd_mod_shift_probe		0
 #define __rsnd_mod_shift_remove		0
@@ -271,6 +277,7 @@ struct rsnd_mod {
 #define __rsnd_mod_shift_stop		2
 #define __rsnd_mod_shift_pcm_new	3
 #define __rsnd_mod_shift_fallback	4
+#define __rsnd_mod_shift_hw_params	31 /* always called */
 
 #define __rsnd_mod_call_probe		0
 #define __rsnd_mod_call_remove		1
@@ -280,19 +287,21 @@ struct rsnd_mod {
 #define __rsnd_mod_call_stop		1
 #define __rsnd_mod_call_pcm_new		0
 #define __rsnd_mod_call_fallback	0
+#define __rsnd_mod_call_hw_params	0
 
 #define rsnd_mod_to_priv(mod) (rsnd_io_to_priv(rsnd_mod_to_io(mod)))
 #define rsnd_mod_to_dma(mod) (&(mod)->dma)
 #define rsnd_mod_to_io(mod) ((mod)->io)
 #define rsnd_mod_id(mod) ((mod)->id)
-#define rsnd_mod_hw_start(mod)	clk_prepare_enable((mod)->clk)
-#define rsnd_mod_hw_stop(mod)	clk_disable_unprepare((mod)->clk)
+#define rsnd_mod_hw_start(mod)	clk_enable((mod)->clk)
+#define rsnd_mod_hw_stop(mod)	clk_disable((mod)->clk)
 
-void rsnd_mod_init(struct rsnd_mod *mod,
+int rsnd_mod_init(struct rsnd_mod *mod,
 		   struct rsnd_mod_ops *ops,
 		   struct clk *clk,
 		   enum rsnd_mod_type type,
 		   int id);
+void rsnd_mod_quit(struct rsnd_mod *mod);
 char *rsnd_mod_name(struct rsnd_mod *mod);
 struct dma_chan *rsnd_mod_dma_req(struct rsnd_mod *mod);
 
@@ -301,6 +310,7 @@ struct dma_chan *rsnd_mod_dma_req(struct rsnd_mod *mod);
  */
 #define RSND_DAI_NAME_SIZE	16
 struct rsnd_dai_stream {
+	char name[RSND_DAI_NAME_SIZE];
 	struct snd_pcm_substream *substream;
 	struct rsnd_mod *mod[RSND_MOD_MAX];
 	struct rsnd_dai_path_info *info; /* rcar_snd.h */
@@ -495,6 +505,8 @@ int rsnd_kctrl_new_e(struct rsnd_mod *mod,
 int rsnd_src_probe(struct platform_device *pdev,
 		   const struct rsnd_of_data *of_data,
 		   struct rsnd_priv *priv);
+void rsnd_src_remove(struct platform_device *pdev,
+		     struct rsnd_priv *priv);
 struct rsnd_mod *rsnd_src_mod_get(struct rsnd_priv *priv, int id);
 unsigned int rsnd_src_get_ssi_rate(struct rsnd_priv *priv,
 				   struct rsnd_dai_stream *io,
@@ -513,6 +525,8 @@ int rsnd_src_ssi_irq_disable(struct rsnd_mod *ssi_mod);
 int rsnd_ssi_probe(struct platform_device *pdev,
 		   const struct rsnd_of_data *of_data,
 		   struct rsnd_priv *priv);
+void rsnd_ssi_remove(struct platform_device *pdev,
+		     struct rsnd_priv *priv);
 struct rsnd_mod *rsnd_ssi_mod_get(struct rsnd_priv *priv, int id);
 int rsnd_ssi_is_pin_sharing(struct rsnd_mod *mod);
 int rsnd_ssi_is_dma_mode(struct rsnd_mod *mod);

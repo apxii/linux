@@ -99,15 +99,15 @@
 #define RSND_RATES SNDRV_PCM_RATE_8000_96000
 #define RSND_FMTS (SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S16_LE)
 
-static struct rsnd_of_data rsnd_of_data_gen1 = {
+static const struct rsnd_of_data rsnd_of_data_gen1 = {
 	.flags = RSND_GEN1,
 };
 
-static struct rsnd_of_data rsnd_of_data_gen2 = {
+static const struct rsnd_of_data rsnd_of_data_gen2 = {
 	.flags = RSND_GEN2,
 };
 
-static struct of_device_id rsnd_of_match[] = {
+static const struct of_device_id rsnd_of_match[] = {
 	{ .compatible = "renesas,rcar_sound-gen1", .data = &rsnd_of_data_gen1 },
 	{ .compatible = "renesas,rcar_sound-gen2", .data = &rsnd_of_data_gen2 },
 	{},
@@ -145,16 +145,29 @@ struct dma_chan *rsnd_mod_dma_req(struct rsnd_mod *mod)
 	return mod->ops->dma_req(mod);
 }
 
-void rsnd_mod_init(struct rsnd_mod *mod,
+int rsnd_mod_init(struct rsnd_mod *mod,
 		   struct rsnd_mod_ops *ops,
 		   struct clk *clk,
 		   enum rsnd_mod_type type,
 		   int id)
 {
+	int ret = clk_prepare(clk);
+
+	if (ret)
+		return ret;
+
 	mod->id		= id;
 	mod->ops	= ops;
 	mod->type	= type;
 	mod->clk	= clk;
+
+	return ret;
+}
+
+void rsnd_mod_quit(struct rsnd_mod *mod)
+{
+	if (mod->clk)
+		clk_unprepare(mod->clk);
 }
 
 /*
@@ -190,7 +203,7 @@ u32 rsnd_get_adinr(struct rsnd_mod *mod)
 ({								\
 	struct rsnd_priv *priv = rsnd_mod_to_priv(mod);		\
 	struct device *dev = rsnd_priv_to_dev(priv);		\
-	u32 mask = 1 << __rsnd_mod_shift_##func;			\
+	u32 mask = (1 << __rsnd_mod_shift_##func) & ~(1 << 31);	\
 	u32 call = __rsnd_mod_call_##func << __rsnd_mod_shift_##func;	\
 	int ret = 0;							\
 	if ((mod->status & mask) == call) {				\
@@ -232,7 +245,7 @@ static int rsnd_dai_connect(struct rsnd_mod *mod,
 		struct rsnd_priv *priv = rsnd_mod_to_priv(mod);
 		struct device *dev = rsnd_priv_to_dev(priv);
 
-		dev_err(dev, "%s%d is not empty\n",
+		dev_err(dev, "%s[%d] is not empty\n",
 			rsnd_mod_name(mod),
 			rsnd_mod_id(mod));
 		return -EIO;
@@ -648,20 +661,28 @@ static int rsnd_dai_probe(struct platform_device *pdev,
 		drv[i].name	= rdai[i].name;
 		drv[i].ops	= &rsnd_soc_dai_ops;
 		if (pmod) {
+			snprintf(rdai[i].playback.name, RSND_DAI_NAME_SIZE,
+				 "DAI%d Playback", i);
+
 			drv[i].playback.rates		= RSND_RATES;
 			drv[i].playback.formats		= RSND_FMTS;
 			drv[i].playback.channels_min	= 2;
 			drv[i].playback.channels_max	= 2;
+			drv[i].playback.stream_name	= rdai[i].playback.name;
 
 			rdai[i].playback.info = &info->dai_info[i].playback;
 			rdai[i].playback.rdai = rdai + i;
 			rsnd_path_init(priv, &rdai[i], &rdai[i].playback);
 		}
 		if (cmod) {
+			snprintf(rdai[i].capture.name, RSND_DAI_NAME_SIZE,
+				 "DAI%d Capture", i);
+
 			drv[i].capture.rates		= RSND_RATES;
 			drv[i].capture.formats		= RSND_FMTS;
 			drv[i].capture.channels_min	= 2;
 			drv[i].capture.channels_max	= 2;
+			drv[i].capture.stream_name	= rdai[i].capture.name;
 
 			rdai[i].capture.info = &info->dai_info[i].capture;
 			rdai[i].capture.rdai = rdai + i;
@@ -707,6 +728,15 @@ static int rsnd_pcm_open(struct snd_pcm_substream *substream)
 static int rsnd_hw_params(struct snd_pcm_substream *substream,
 			 struct snd_pcm_hw_params *hw_params)
 {
+	struct snd_soc_dai *dai = rsnd_substream_to_dai(substream);
+	struct rsnd_dai *rdai = rsnd_dai_to_rdai(dai);
+	struct rsnd_dai_stream *io = rsnd_rdai_to_io(rdai, substream);
+	int ret;
+
+	ret = rsnd_dai_call(hw_params, io, substream, hw_params);
+	if (ret)
+		return ret;
+
 	return snd_pcm_lib_malloc_pages(substream,
 					params_buffer_bytes(hw_params));
 }
@@ -1065,6 +1095,12 @@ static int rsnd_remove(struct platform_device *pdev)
 {
 	struct rsnd_priv *priv = dev_get_drvdata(&pdev->dev);
 	struct rsnd_dai *rdai;
+	void (*remove_func[])(struct platform_device *pdev,
+			      struct rsnd_priv *priv) = {
+		rsnd_ssi_remove,
+		rsnd_src_remove,
+		rsnd_dvc_remove,
+	};
 	int ret = 0, i;
 
 	pm_runtime_disable(&pdev->dev);
@@ -1073,6 +1109,9 @@ static int rsnd_remove(struct platform_device *pdev)
 		ret |= rsnd_dai_call(remove, &rdai->playback, priv);
 		ret |= rsnd_dai_call(remove, &rdai->capture, priv);
 	}
+
+	for (i = 0; i < ARRAY_SIZE(remove_func); i++)
+		remove_func[i](pdev, priv);
 
 	snd_soc_unregister_component(&pdev->dev);
 	snd_soc_unregister_platform(&pdev->dev);

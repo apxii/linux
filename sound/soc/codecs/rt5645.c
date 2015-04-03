@@ -1270,6 +1270,8 @@ static void hp_amp_power(struct snd_soc_codec *codec, int on)
 			snd_soc_update_bits(codec, RT5645_PWR_ANLG1,
 				RT5645_PWR_HP_L | RT5645_PWR_HP_R |
 				RT5645_PWR_HA, 0);
+			snd_soc_update_bits(codec, RT5645_DEPOP_M2,
+				RT5645_DEPOP_MASK, 0);
 		}
 	}
 }
@@ -2049,7 +2051,7 @@ static int rt5645_hw_params(struct snd_pcm_substream *substream,
 {
 	struct snd_soc_codec *codec = dai->codec;
 	struct rt5645_priv *rt5645 = snd_soc_codec_get_drvdata(codec);
-	unsigned int val_len = 0, val_clk, mask_clk;
+	unsigned int val_len = 0, val_clk, mask_clk, dl_sft;
 	int pre_div, bclk_ms, frame_size;
 
 	rt5645->lrck[dai->id] = params_rate(params);
@@ -2063,6 +2065,16 @@ static int rt5645_hw_params(struct snd_pcm_substream *substream,
 		dev_err(codec->dev, "Unsupported frame size: %d\n", frame_size);
 		return -EINVAL;
 	}
+
+	switch (rt5645->codec_type) {
+	case CODEC_TYPE_RT5650:
+		dl_sft = 4;
+		break;
+	default:
+		dl_sft = 2;
+		break;
+	}
+
 	bclk_ms = frame_size > 32;
 	rt5645->bclk[dai->id] = rt5645->lrck[dai->id] * (32 << bclk_ms);
 
@@ -2075,13 +2087,13 @@ static int rt5645_hw_params(struct snd_pcm_substream *substream,
 	case 16:
 		break;
 	case 20:
-		val_len |= RT5645_I2S_DL_20;
+		val_len = 0x1;
 		break;
 	case 24:
-		val_len |= RT5645_I2S_DL_24;
+		val_len = 0x2;
 		break;
 	case 8:
-		val_len |= RT5645_I2S_DL_8;
+		val_len = 0x3;
 		break;
 	default:
 		return -EINVAL;
@@ -2093,7 +2105,7 @@ static int rt5645_hw_params(struct snd_pcm_substream *substream,
 		val_clk = bclk_ms << RT5645_I2S_BCLK_MS1_SFT |
 			pre_div << RT5645_I2S_PD1_SFT;
 		snd_soc_update_bits(codec, RT5645_I2S1_SDP,
-			RT5645_I2S_DL_MASK, val_len);
+			(0x3 << dl_sft), (val_len << dl_sft));
 		snd_soc_update_bits(codec, RT5645_ADDA_CLK1, mask_clk, val_clk);
 		break;
 	case  RT5645_AIF2:
@@ -2101,7 +2113,7 @@ static int rt5645_hw_params(struct snd_pcm_substream *substream,
 		val_clk = bclk_ms << RT5645_I2S_BCLK_MS2_SFT |
 			pre_div << RT5645_I2S_PD2_SFT;
 		snd_soc_update_bits(codec, RT5645_I2S2_SDP,
-			RT5645_I2S_DL_MASK, val_len);
+			(0x3 << dl_sft), (val_len << dl_sft));
 		snd_soc_update_bits(codec, RT5645_ADDA_CLK1, mask_clk, val_clk);
 		break;
 	default:
@@ -2116,7 +2128,16 @@ static int rt5645_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 {
 	struct snd_soc_codec *codec = dai->codec;
 	struct rt5645_priv *rt5645 = snd_soc_codec_get_drvdata(codec);
-	unsigned int reg_val = 0;
+	unsigned int reg_val = 0, pol_sft;
+
+	switch (rt5645->codec_type) {
+	case CODEC_TYPE_RT5650:
+		pol_sft = 8;
+		break;
+	default:
+		pol_sft = 7;
+		break;
+	}
 
 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
 	case SND_SOC_DAIFMT_CBM_CFM:
@@ -2134,7 +2155,7 @@ static int rt5645_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	case SND_SOC_DAIFMT_NB_NF:
 		break;
 	case SND_SOC_DAIFMT_IB_NF:
-		reg_val |= RT5645_I2S_BP_INV;
+		reg_val |= (1 << pol_sft);
 		break;
 	default:
 		return -EINVAL;
@@ -2158,12 +2179,12 @@ static int rt5645_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	switch (dai->id) {
 	case RT5645_AIF1:
 		snd_soc_update_bits(codec, RT5645_I2S1_SDP,
-			RT5645_I2S_MS_MASK | RT5645_I2S_BP_MASK |
+			RT5645_I2S_MS_MASK | (1 << pol_sft) |
 			RT5645_I2S_DF_MASK, reg_val);
 		break;
 	case RT5645_AIF2:
 		snd_soc_update_bits(codec, RT5645_I2S2_SDP,
-			RT5645_I2S_MS_MASK | RT5645_I2S_BP_MASK |
+			RT5645_I2S_MS_MASK | (1 << pol_sft) |
 			RT5645_I2S_DF_MASK, reg_val);
 		break;
 	default:
@@ -2377,7 +2398,8 @@ static int rt5645_set_bias_level(struct snd_soc_codec *codec,
 
 	case SND_SOC_BIAS_OFF:
 		snd_soc_write(codec, RT5645_DEPOP_M2, 0x1100);
-		snd_soc_write(codec, RT5645_GEN_CTRL1, 0x0128);
+		snd_soc_update_bits(codec, RT5645_GEN_CTRL1,
+				RT5645_DIG_GATE_CTRL, 0);
 		snd_soc_update_bits(codec, RT5645_PWR_ANLG1,
 				RT5645_PWR_VREF1 | RT5645_PWR_MB |
 				RT5645_PWR_BG | RT5645_PWR_VREF2 |
@@ -2614,7 +2636,7 @@ static struct snd_soc_codec_driver soc_codec_dev_rt5645 = {
 static const struct regmap_config rt5645_regmap = {
 	.reg_bits = 8,
 	.val_bits = 16,
-
+	.use_single_rw = true,
 	.max_register = RT5645_VENDOR_ID2 + 1 + (ARRAY_SIZE(rt5645_ranges) *
 					       RT5645_PR_SPACING),
 	.volatile_reg = rt5645_volatile_register,
