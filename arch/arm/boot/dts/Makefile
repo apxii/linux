@@ -170,6 +170,7 @@ dtb-$(CONFIG_MACH_KIRKWOOD) += \
 	kirkwood-lsxhl.dtb \
 	kirkwood-mplcec4.dtb \
 	kirkwood-mv88f6281gtw-ge.dtb \
+	kirkwood-nas2big.dtb \
 	kirkwood-net2big.dtb \
 	kirkwood-net5big.dtb \
 	kirkwood-netgear_readynas_duo_v2.dtb \
@@ -393,6 +394,8 @@ dtb-$(CONFIG_ARCH_OMAP3) += \
 	omap3-overo-storm-tobi.dtb \
 	omap3-overo-summit.dtb \
 	omap3-overo-tobi.dtb \
+	omap3-pandora-600mhz.dtb \
+	omap3-pandora-1ghz.dtb \
 	omap3-sbc-t3517.dtb \
 	omap3-sbc-t3530.dtb \
 	omap3-sbc-t3730.dtb \
@@ -408,7 +411,8 @@ dtb-$(CONFIG_SOC_AM33XX) += \
 	am335x-evmsk.dtb \
 	am335x-nano.dtb \
 	am335x-pepper.dtb \
-	am335x-lxm.dtb
+	am335x-lxm.dtb \
+	am335x-chiliboard.dtb
 dtb-$(CONFIG_ARCH_OMAP4) += \
 	omap4-duovero-parlor.dtb \
 	omap4-panda.dtb \
@@ -582,6 +586,7 @@ dtb-$(CONFIG_ARCH_TEGRA_114_SOC) += \
 dtb-$(CONFIG_ARCH_TEGRA_124_SOC) += \
 	tegra124-jetson-tk1.dtb \
 	tegra124-nyan-big.dtb \
+	tegra124-nyan-blaze.dtb \
 	tegra124-venice2.dtb
 dtb-$(CONFIG_ARCH_U300) += \
 	ste-u300.dtb
