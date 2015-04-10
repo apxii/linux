@@ -251,6 +251,33 @@
 	};
 };
 
+&i2c0 {
+	status = "okay";
+	clock-frequency = <400000>;
+};
+
+&i2c2 {
+	status = "okay";
+	clock-frequency = <100000>;
+
+	hdmi@4c {
+		compatible = "ite,it66121";
+		reg = <0x4c>;
+		it66121-interrupt-gpios = <&gpio2 30 GPIO_ACTIVE_HIGH>;
+		it66121-reset-gpios = <&gpio3 10 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&i2c3 {
+	status = "okay";
+//	clock-frequency = <400000>;
+};
+
+&i2c4 {
+	status = "okay";
+	clock-frequency = <400000>;
+};
+
 &mmc0 {
 	num-slots = <1>;
 	status = "okay";
@@ -311,6 +338,7 @@
 			rockchip,pins = <2 31 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
+
 };
 
 &uart0 {
