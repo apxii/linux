@@ -1,0 +1,8 @@
+config DRM_HDMI_IT66121
+	tristate "ITE IT66121"
+	depends on DRM
+	depends on OF
+	depends on HDMI
+	depends on I2C
+	---help---
+	  ITE IT66121 HDMI Transmitter driver
