@@ -917,7 +917,7 @@ static int set_dmic_clk(struct snd_soc_dapm_widget *w,
 {
 	struct snd_soc_codec *codec = snd_soc_dapm_to_codec(w->dapm);
 	struct rt5677_priv *rt5677 = snd_soc_codec_get_drvdata(codec);
-	int idx = rl6231_calc_dmic_clk(rt5677->sysclk);
+	int idx = rl6231_calc_dmic_clk(rt5677->lrck[RT5677_AIF1] << 8);
 
 	if (idx < 0)
 		dev_err(codec->dev, "Failed to set DMIC clock\n");
@@ -1060,6 +1060,7 @@ int rt5677_sel_asrc_clk_src(struct snd_soc_codec *codec,
 	unsigned int asrc5_mask = 0, asrc5_value = 0;
 	unsigned int asrc6_mask = 0, asrc6_value = 0;
 	unsigned int asrc7_mask = 0, asrc7_value = 0;
+	unsigned int asrc8_mask = 0, asrc8_value = 0;
 
 	switch (clk_src) {
 	case RT5677_CLK_SEL_SYS:
@@ -1195,6 +1196,35 @@ int rt5677_sel_asrc_clk_src(struct snd_soc_codec *codec,
 	if (asrc7_mask)
 		regmap_update_bits(rt5677->regmap, RT5677_ASRC_7, asrc7_mask,
 			asrc7_value);
+
+	/* ASRC 8 */
+	if (filter_mask & RT5677_I2S1_SOURCE) {
+		asrc8_mask |= RT5677_I2S1_CLK_SEL_MASK;
+		asrc8_value = (asrc8_value & ~RT5677_I2S1_CLK_SEL_MASK)
+			| ((clk_src - 1) << RT5677_I2S1_CLK_SEL_SFT);
+	}
+
+	if (filter_mask & RT5677_I2S2_SOURCE) {
+		asrc8_mask |= RT5677_I2S2_CLK_SEL_MASK;
+		asrc8_value = (asrc8_value & ~RT5677_I2S2_CLK_SEL_MASK)
+			| ((clk_src - 1) << RT5677_I2S2_CLK_SEL_SFT);
+	}
+
+	if (filter_mask & RT5677_I2S3_SOURCE) {
+		asrc8_mask |= RT5677_I2S3_CLK_SEL_MASK;
+		asrc8_value = (asrc8_value & ~RT5677_I2S3_CLK_SEL_MASK)
+			| ((clk_src - 1) << RT5677_I2S3_CLK_SEL_SFT);
+	}
+
+	if (filter_mask & RT5677_I2S4_SOURCE) {
+		asrc8_mask |= RT5677_I2S4_CLK_SEL_MASK;
+		asrc8_value = (asrc8_value & ~RT5677_I2S4_CLK_SEL_MASK)
+			| ((clk_src - 1) << RT5677_I2S4_CLK_SEL_SFT);
+	}
+
+	if (asrc8_mask)
+		regmap_update_bits(rt5677->regmap, RT5677_ASRC_8, asrc8_mask,
+			asrc8_value);
 
 	return 0;
 }
