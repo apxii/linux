@@ -152,7 +152,6 @@ static	ssize_t set_fan_mode	(struct device *dev, struct device_attribute *attr, 
 	unsigned int	val;
 
     if(!(sscanf(buf, "%u\n", &val)))	return	-EINVAL;
-	printk("PWM_0 : %s [%d] \n",__FUNCTION__,val);
 
 	mutex_lock(&fan->mutex);
     if(val) fan->fan_mode = 1;
@@ -193,8 +192,6 @@ static	ssize_t set_pwm_duty	(struct device *dev, struct device_attribute *attr, 
 		printk("PWM_0 : Invalid param. Duty cycle range is 0 to 255 \n");
 		return count;
 	}
-
-	printk("PWM_0 : %s [%d] \n",__FUNCTION__,val);
 
 	mutex_lock(&fan->mutex);
 	fan->duty = val;
