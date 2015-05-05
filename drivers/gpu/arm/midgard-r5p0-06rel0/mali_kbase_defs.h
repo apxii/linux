@@ -863,6 +863,8 @@ struct kbase_device {
 	atomic_t ctx_num;
 };
 
+typedef struct kbase_device kbase_device;
+
 struct kbase_context {
 	struct kbase_device *kbdev;
 	int id; /* System wide unique id */
