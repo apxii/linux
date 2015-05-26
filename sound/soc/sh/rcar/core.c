@@ -170,6 +170,14 @@ void rsnd_mod_quit(struct rsnd_mod *mod)
 		clk_unprepare(mod->clk);
 }
 
+int rsnd_mod_is_working(struct rsnd_mod *mod)
+{
+	struct rsnd_dai_stream *io = rsnd_mod_to_io(mod);
+
+	/* see rsnd_dai_stream_init/quit() */
+	return !!io->substream;
+}
+
 /*
  *	settting function
  */
@@ -315,7 +323,7 @@ void rsnd_dai_pointer_update(struct rsnd_dai_stream *io, int byte)
 	}
 }
 
-static int rsnd_dai_stream_init(struct rsnd_dai_stream *io,
+static void rsnd_dai_stream_init(struct rsnd_dai_stream *io,
 				struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
@@ -327,8 +335,11 @@ static int rsnd_dai_stream_init(struct rsnd_dai_stream *io,
 				  runtime->channels *
 				  samples_to_bytes(runtime, 1);
 	io->next_period_byte	= io->byte_per_period;
+}
 
-	return 0;
+static void rsnd_dai_stream_quit(struct rsnd_dai_stream *io)
+{
+	io->substream		= NULL;
 }
 
 static
@@ -359,13 +370,11 @@ static int rsnd_soc_dai_trigger(struct snd_pcm_substream *substream, int cmd,
 	int ret;
 	unsigned long flags;
 
-	rsnd_lock(priv, flags);
+	spin_lock_irqsave(&priv->lock, flags);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
-		ret = rsnd_dai_stream_init(io, substream);
-		if (ret < 0)
-			goto dai_trigger_end;
+		rsnd_dai_stream_init(io, substream);
 
 		ret = rsnd_platform_call(priv, dai, start, ssi_id);
 		if (ret < 0)
@@ -391,13 +400,15 @@ static int rsnd_soc_dai_trigger(struct snd_pcm_substream *substream, int cmd,
 		ret = rsnd_platform_call(priv, dai, stop, ssi_id);
 		if (ret < 0)
 			goto dai_trigger_end;
+
+		rsnd_dai_stream_quit(io);
 		break;
 	default:
 		ret = -EINVAL;
 	}
 
 dai_trigger_end:
-	rsnd_unlock(priv, flags);
+	spin_unlock_irqrestore(&priv->lock, flags);
 
 	return ret;
 }
