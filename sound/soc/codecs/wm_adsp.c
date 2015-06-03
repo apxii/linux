@@ -121,6 +121,11 @@
 #define ADSP2_WDMA_CONFIG_2 0x31
 #define ADSP2_RDMA_CONFIG_1 0x34
 
+#define ADSP2_SCRATCH0        0x40
+#define ADSP2_SCRATCH1        0x41
+#define ADSP2_SCRATCH2        0x42
+#define ADSP2_SCRATCH3        0x43
+
 /*
  * ADSP2 Control
  */
@@ -362,6 +367,25 @@ static unsigned int wm_adsp_region_to_reg(struct wm_adsp_region const *mem,
 		WARN(1, "Unknown memory region type");
 		return offset;
 	}
+}
+
+static void wm_adsp2_show_fw_status(struct wm_adsp *dsp)
+{
+	u16 scratch[4];
+	int ret;
+
+	ret = regmap_raw_read(dsp->regmap, dsp->base + ADSP2_SCRATCH0,
+				scratch, sizeof(scratch));
+	if (ret) {
+		adsp_err(dsp, "Failed to read SCRATCH regs: %d\n", ret);
+		return;
+	}
+
+	adsp_dbg(dsp, "FW SCRATCH 0:0x%x 1:0x%x 2:0x%x 3:0x%x\n",
+		 be16_to_cpu(scratch[0]),
+		 be16_to_cpu(scratch[1]),
+		 be16_to_cpu(scratch[2]),
+		 be16_to_cpu(scratch[3]));
 }
 
 static int wm_coeff_info(struct snd_kcontrol *kcontrol,
@@ -1787,35 +1811,6 @@ static void wm_adsp2_boot_work(struct work_struct *work)
 		return;
 	}
 
-	if (dsp->dvfs) {
-		ret = regmap_read(dsp->regmap,
-				  dsp->base + ADSP2_CLOCKING, &val);
-		if (ret != 0) {
-			adsp_err(dsp, "Failed to read clocking: %d\n", ret);
-			return;
-		}
-
-		if ((val & ADSP2_CLK_SEL_MASK) >= 3) {
-			ret = regulator_enable(dsp->dvfs);
-			if (ret != 0) {
-				adsp_err(dsp,
-					 "Failed to enable supply: %d\n",
-					 ret);
-				return;
-			}
-
-			ret = regulator_set_voltage(dsp->dvfs,
-						    1800000,
-						    1800000);
-			if (ret != 0) {
-				adsp_err(dsp,
-					 "Failed to raise supply: %d\n",
-					 ret);
-				return;
-			}
-		}
-	}
-
 	ret = wm_adsp2_ena(dsp);
 	if (ret != 0)
 		return;
@@ -1898,6 +1893,9 @@ int wm_adsp2_event(struct snd_soc_dapm_widget *w,
 		break;
 
 	case SND_SOC_DAPM_PRE_PMD:
+		/* Log firmware state, it can be useful for analysis */
+		wm_adsp2_show_fw_status(dsp);
+
 		dsp->running = false;
 
 		regmap_update_bits(dsp->regmap, dsp->base + ADSP2_CONTROL,
@@ -1908,21 +1906,6 @@ int wm_adsp2_event(struct snd_soc_dapm_widget *w,
 		regmap_write(dsp->regmap, dsp->base + ADSP2_WDMA_CONFIG_1, 0);
 		regmap_write(dsp->regmap, dsp->base + ADSP2_WDMA_CONFIG_2, 0);
 		regmap_write(dsp->regmap, dsp->base + ADSP2_RDMA_CONFIG_1, 0);
-
-		if (dsp->dvfs) {
-			ret = regulator_set_voltage(dsp->dvfs, 1200000,
-						    1800000);
-			if (ret != 0)
-				adsp_warn(dsp,
-					  "Failed to lower supply: %d\n",
-					  ret);
-
-			ret = regulator_disable(dsp->dvfs);
-			if (ret != 0)
-				adsp_err(dsp,
-					 "Failed to enable supply: %d\n",
-					 ret);
-		}
 
 		list_for_each_entry(ctl, &dsp->ctl_list, list)
 			ctl->enabled = 0;
@@ -1950,7 +1933,7 @@ err:
 }
 EXPORT_SYMBOL_GPL(wm_adsp2_event);
 
-int wm_adsp2_init(struct wm_adsp *dsp, bool dvfs)
+int wm_adsp2_init(struct wm_adsp *dsp)
 {
 	int ret;
 
@@ -1968,33 +1951,6 @@ int wm_adsp2_init(struct wm_adsp *dsp, bool dvfs)
 	INIT_LIST_HEAD(&dsp->alg_regions);
 	INIT_LIST_HEAD(&dsp->ctl_list);
 	INIT_WORK(&dsp->boot_work, wm_adsp2_boot_work);
-
-	if (dvfs) {
-		dsp->dvfs = devm_regulator_get(dsp->dev, "DCVDD");
-		if (IS_ERR(dsp->dvfs)) {
-			ret = PTR_ERR(dsp->dvfs);
-			adsp_err(dsp, "Failed to get DCVDD: %d\n", ret);
-			return ret;
-		}
-
-		ret = regulator_enable(dsp->dvfs);
-		if (ret != 0) {
-			adsp_err(dsp, "Failed to enable DCVDD: %d\n", ret);
-			return ret;
-		}
-
-		ret = regulator_set_voltage(dsp->dvfs, 1200000, 1800000);
-		if (ret != 0) {
-			adsp_err(dsp, "Failed to initialise DVFS: %d\n", ret);
-			return ret;
-		}
-
-		ret = regulator_disable(dsp->dvfs);
-		if (ret != 0) {
-			adsp_err(dsp, "Failed to disable DCVDD: %d\n", ret);
-			return ret;
-		}
-	}
 
 	return 0;
 }
