@@ -355,7 +355,7 @@ static const struct snd_soc_component_driver zx_i2s_component = {
 	.name			= "zx-i2s",
 };
 
-struct snd_soc_dai_driver zx_i2s_dai = {
+static struct snd_soc_dai_driver zx_i2s_dai = {
 	.name	= "zx-i2s-dai",
 	.id	= 0,
 	.probe	= zx_i2s_dai_probe,
@@ -425,7 +425,6 @@ static struct platform_driver i2s_driver = {
 	.probe = zx_i2s_probe,
 	.driver = {
 		.name = "zx-i2s",
-		.owner = THIS_MODULE,
 		.of_match_table = zx_i2s_dt_ids,
 	},
 };

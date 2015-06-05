@@ -188,11 +188,7 @@ static int zx_spdif_hw_params(struct snd_pcm_substream *substream,
 	ret = zx_spdif_chanstats(zx_spdif->reg_base, rate);
 	if (ret)
 		return ret;
-	ret = clk_set_rate(spdif->dai_clk, rate * ch_num * ZX_SPDIF_CLK_RAT);
-	if (ret)
-		return ret;
-
-	return 0;
+	return clk_set_rate(spdif->dai_clk, rate * ch_num * ZX_SPDIF_CLK_RAT);
 }
 
 static void zx_spdif_cfg_tx(void __iomem *base, int on)
@@ -313,7 +309,7 @@ static int zx_spdif_probe(struct platform_device *pdev)
 	struct zx_spdif_info *zx_spdif;
 	int ret;
 
-	zx_spdif = devm_kzalloc(sizeof(*zx_spdif), GFP_KERNEL);
+	zx_spdif = devm_kzalloc(&pdev->dev, sizeof(*zx_spdif), GFP_KERNEL);
 	if (!zx_spdif)
 		return -ENOMEM;
 
@@ -358,7 +354,6 @@ static struct platform_driver spdif_driver = {
 	.probe = zx_spdif_probe,
 	.driver = {
 		.name = "zx-spdif",
-		.owner = THIS_MODULE,
 		.of_match_table = zx_spdif_dt_ids,
 	},
 };
