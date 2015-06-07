@@ -169,14 +169,15 @@ static int ar8035_phy_fixup(struct phy_device *dev)
 static int rtl8211e_phy_fixup(struct phy_device *dev)
 {
 	phy_write(dev, 0x00, 0x3140);
-	mdelay(10);
+	msleep(10);
 	phy_write(dev, 0x00, 0x3340);
-	mdelay(10);
+	msleep(10);
 
 	return 0;
 }
 
 #define PHY_ID_RTL8211E 0x001cc915
+#define REALTEK_PHY_ID_MASK 0x001fffff
 
 static void __init imx6q_enet_phy_init(void)
 {
@@ -189,7 +190,7 @@ static void __init imx6q_enet_phy_init(void)
 				ar8031_phy_fixup);
 		phy_register_fixup_for_uid(PHY_ID_AR8035, 0xffffffef,
 				ar8035_phy_fixup);
-		phy_register_fixup_for_uid(PHY_ID_RTL8211E, 0xffffffff,
+		phy_register_fixup_for_uid(PHY_ID_RTL8211E, REALTEK_PHY_ID_MASK,
 				rtl8211e_phy_fixup);
 	}
 }
