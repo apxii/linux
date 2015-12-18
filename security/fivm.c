@@ -32,6 +32,7 @@ int fivm_open_verify(struct file *file, const char *pathname,int mask)
 	else
 		return 0 ;
 }
+EXPORT_SYMBOL(fivm_open_verify);
 
 int fivm_register_func( 
 		int (* mmap_verify)(struct file *, unsigned long ),
