@@ -2105,12 +2105,13 @@ static void sunxi_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	BUG_ON(ios->power_mode >= sizeof(pwr_mode)/sizeof(pwr_mode[0]));
 	BUG_ON(ios->signal_voltage >= sizeof(vdd)/sizeof(vdd[0]));
 	BUG_ON(ios->timing >= sizeof(timing)/sizeof(timing[0]));
+#if 0
 	SMC_MSG(smc_host, "sdc%d set ios: "
 		"clk %dHz bm %s pm %s vdd %s width %d timing %s dt %s\n",
 		smc_host->pdev->id, ios->clock, bus_mode[ios->bus_mode],
 		pwr_mode[ios->power_mode], vdd[ios->signal_voltage],
 		1 << ios->bus_width, timing[ios->timing], drv_type[ios->drv_type]);
-
+#endif
 	/* Set the power state */
 	switch (ios->power_mode) {
 		case MMC_POWER_ON:
