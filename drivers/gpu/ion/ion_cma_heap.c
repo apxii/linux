@@ -48,7 +48,18 @@ struct ion_cma_buffer_info {
 struct page *dma_alloc_from_contiguous(struct device *dev,
 				int count, unsigned int align);
 void __dma_clear_buffer(struct page *page, size_t size);
-inline pgprot_t __get_dma_pgprot(struct dma_attrs *attrs, pgprot_t prot);
+/*
+    Borrowed from arch/arm/mm/dma-mapping.c
+    How it's even supposed to compile if inline function is declared in other source
+*/
+inline pgprot_t __get_dma_pgprot(struct dma_attrs *attrs, pgprot_t prot)
+{
+	prot = dma_get_attr(DMA_ATTR_WRITE_COMBINE, attrs) ?
+			    pgprot_writecombine(prot) :
+			    pgprot_dmacoherent(prot);
+	return prot;
+}
+
 void *__dma_alloc_remap(struct page *page, size_t size, gfp_t gfp,
 				pgprot_t prot, const void *caller);
 void __dma_remap(struct page *page, size_t size, pgprot_t prot);
