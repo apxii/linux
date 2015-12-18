@@ -914,9 +914,11 @@ int devinet_ioctl(struct net *net, unsigned int cmd, void __user *arg)
 			inet_insert_ifa(ifa);
 		}
 		break;
+#if IS_ENABLED(CONFIG_ANDROID)
 	case SIOCKILLADDR:	/* Nuke all connections on this address */
 		ret = tcp_nuke_addr(net, (struct sockaddr *) sin);
 		break;
+#endif
 	}
 done:
 	rtnl_unlock();

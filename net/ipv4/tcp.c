@@ -3352,6 +3352,7 @@ void __init tcp_init(void)
 	tcp_secret_secondary = &tcp_secret_two;
 }
 
+#if IS_ENABLED(CONFIG_ANDROID)
 static int tcp_is_local(struct net *net, __be32 addr) {
 	struct rtable *rt;
 	struct flowi4 fl4 = { .daddr = addr };
@@ -3455,3 +3456,4 @@ restart:
 
 	return 0;
 }
+#endif
