@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2010, 2012-2013, 2015 ARM Limited. All rights reserved.
+# Copyright (C) 2010, 2012-2013 ARM Limited. All rights reserved.
 # 
 # This program is free software and is provided to you under the terms of the GNU General Public License version 2
 # as published by the Free Software Foundation, and any use by you of this program is subject to the terms of such GNU licence.
@@ -14,7 +14,7 @@ MALI_DRM_FILE_PREFIX =
 
 ARCH ?= arm
 ## @note Should allow overriding of building MALI DRM for non-debug:
-EXTRA_CFLAGS += -DDEBUG
+EXTRA_CFLAGS += -DDEBUG 
 
 DRM_SYMVERS_FILE = ../drm/Module.symvers
 KBUILD_EXTRA_SYMBOLS = $(KBUILD_EXTMOD)/$(DRM_SYMVERS_FILE)
@@ -25,7 +25,8 @@ KBUILD_EXTRA_SYMBOLS = $(KBUILD_EXTMOD)/$(DRM_SYMVERS_FILE)
 ifneq ($(KERNELRELEASE),)
 # Inside the kernel build system
 
-EXTRA_CFLAGS += -I$(KBUILD_EXTMOD) -I$(KBUILD_EXTMOD)/include -I$(KBUILD_EXTMOD)/../drm/include/
+#EXTRA_CFLAGS += -I$(KBUILD_EXTMOD) -I$(KBUILD_EXTMOD)/include -I$(KBUILD_EXTMOD)/../drm/include/
+EXTRA_CFLAGS += -I$(KBUILD_EXTMOD) -I$(KBUILD_EXTMOD)/include -I$(KBUILD_EXTMOD)/../drm/include/ -D__linux__
 
 SRC +=	$(MALI_DRM_FILE_PREFIX)mali/mali_drv.c \
 	$(MALI_DRM_FILE_PREFIX)mali/mali_mm.c
