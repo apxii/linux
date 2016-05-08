@@ -243,7 +243,7 @@ static struct dentry *decode_by_ino(struct super_block *sb, ino_t ino,
 		dentry = d_find_alias(inode);
 	else {
 		spin_lock(&inode->i_lock);
-		hlist_for_each_entry(d, &inode->i_dentry, d_alias) {
+		hlist_for_each_entry(d, &inode->i_dentry, d_u.d_alias) {
 			spin_lock(&d->d_lock);
 			if (!au_test_anon(d)
 			    && d->d_parent->d_inode->i_ino == dir_ino) {
@@ -300,9 +300,9 @@ static struct vfsmount *au_mnt_get(struct super_block *sb)
 	};
 
 	get_fs_root(current->fs, &root);
-	br_read_lock(&vfsmount_lock);
+	rcu_read_lock();
 	err = iterate_mounts(au_compare_mnt, &args, root.mnt);
-	br_read_unlock(&vfsmount_lock);
+	rcu_read_unlock();
 	path_put(&root);
 	AuDebugOn(!err);
 	AuDebugOn(!args.mnt);
