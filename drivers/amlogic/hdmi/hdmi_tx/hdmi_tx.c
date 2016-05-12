@@ -63,11 +63,6 @@ static int set_disp_mode_auto(void);
 const vinfo_t * hdmi_get_current_vinfo(void);
 
 struct hdmi_config_platform_data *hdmi_pdata;
-int dvi_mode;
-EXPORT_SYMBOL(dvi_mode);
-#ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION
-static int suspend_flag=0;
-#endif
 
 static hdmitx_dev_t hdmitx_device;
 static struct switch_dev sdev = {      // android ics switch device
@@ -81,9 +76,7 @@ static void hdmitx_early_suspend(struct early_suspend *h)
     hdmitx_dev_t * phdmi = (hdmitx_dev_t *)h->param;
     if (info && (strncmp(info->name, "panel", 5) == 0 || strncmp(info->name, "null", 4) == 0))
         return;
-#ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION
-	suspend_flag=1;
-#endif
+
     phdmi->hpd_lock = 1;
     phdmi->HWOp.Cntl((hdmitx_dev_t *)h->param, HDMITX_EARLY_SUSPEND_RESUME_CNTL, HDMITX_EARLY_SUSPEND);
     phdmi->cur_VIC = HDMI_Unkown;
@@ -110,9 +103,7 @@ static void hdmitx_late_resume(struct early_suspend *h)
     hdmitx_device.HWOp.CntlDDC(&hdmitx_device, DDC_HDCP_OP, HDCP_OFF);
     hdmitx_device.internal_mode_change = 0;
     set_disp_mode_auto();
-#ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION
-	suspend_flag=0;
-#endif
+
     pr_info("amhdmitx: late resume module %d\n", __LINE__);
     phdmi->HWOp.Cntl((hdmitx_dev_t *)h->param, HDMITX_EARLY_SUSPEND_RESUME_CNTL, HDMITX_LATE_RESUME);
     hdmi_print(INF, SYS "late resume\n");
@@ -323,7 +314,6 @@ static void hdmitx_pre_display_init(void)
 // "vic_old==HDMI_720P60" means old vic is HDMI_1080p60, but vmode maybe VMODE_1080P or VMODE_1080P_59HZ 
 static int is_similar_hdmi_vic(HDMI_Video_Codes_t vic_old, vmode_t mode_new)
 {
-	printk("%s[%d] vic_old=%d,mode_new=%d\n", __FUNCTION__, __LINE__,vic_old,mode_new);
 	if( (vic_old==HDMI_480p60_16x9) && (mode_new==VMODE_480P_59HZ) )
 		return 1;	
 	if( (vic_old==HDMI_720p60) && (mode_new==VMODE_720P_59HZ) )
@@ -430,17 +420,13 @@ static int set_disp_mode_auto(void)
     }
 
 #ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION
-	if(suspend_flag==1)
- 		vic_ready = HDMI_Unkown;
-	else if( is_similar_hdmi_vic(vic_ready, info->mode) ){
+	if( is_similar_hdmi_vic(vic_ready, info->mode) )
 		vic_ready = HDMI_Unkown;
-		printk("%s[%d] is similiar vic\n", __FUNCTION__, __LINE__);
-	}
 #endif
 
     if((vic_ready != HDMI_Unkown) && (vic_ready == vic)) {
         hdmi_print(IMP, SYS "[%s] ALREADY init VIC = %d\n", __func__, vic);
-        if(dvi_mode == 1) { 
+        if (voutmode_dvi_vga()) {
 			pr_emerg("hdmi: dvi case judgement -> IEEEOUI: %d\n", hdmitx_device.RXCap.IEEEOUI);
 			hdmitx_device.RXCap.IEEEOUI = 0;
             hdmitx_device.HWOp.CntlConfig(&hdmitx_device, CONF_HDMI_DVI_MODE, DVI_MODE);
@@ -524,6 +510,7 @@ static ssize_t store_disp_mode(struct device * dev, struct device_attribute *att
     return 16;
 }
 
+#ifndef CONFIG_AML_HDMI_TX_NEW_CEC_DRIVER
 /*cec attr*/
 static ssize_t show_cec(struct device * dev, struct device_attribute *attr, char * buf)
 {
@@ -563,6 +550,22 @@ static ssize_t store_cec_lang_config(struct device * dev, struct device_attribut
     cec_usrcmd_set_lang_config(buf, count);
     return count;
 }
+
+#else
+
+extern unsigned long amlogic_cec_debug_flag;
+
+static ssize_t show_amlogic_cec_debug_config(struct device *dev, struct device_attribute *attr, char *buf)
+{
+    return snprintf(buf, PAGE_SIZE, "amlogic_cec_debug:%lu\n", amlogic_cec_debug_flag);
+}
+
+static ssize_t store_amlogic_cec_debug_config(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+   return kstrtoul(buf, 16, &amlogic_cec_debug_flag) ? 0 : count;
+}
+
+#endif
 
 static ssize_t show_cec_lang_config(struct device * dev, struct device_attribute *attr, char * buf)
 {
@@ -958,10 +961,14 @@ static DEVICE_ATTR(disp_cap_3d, S_IWUSR | S_IRUGO, show_disp_cap_3d, NULL);
 static DEVICE_ATTR(hdcp_ksv_info, S_IWUSR | S_IRUGO, show_hdcp_ksv_info, NULL);
 static DEVICE_ATTR(hpd_state, S_IWUSR | S_IRUGO, show_hpd_state, NULL);
 static DEVICE_ATTR(support_3d, S_IWUSR | S_IRUGO, show_support_3d, NULL);
+#ifndef CONFIG_AML_HDMI_TX_NEW_CEC_DRIVER
 static DEVICE_ATTR(cec, S_IWUSR | S_IRUGO, show_cec, store_cec);
 static DEVICE_ATTR(cec_config, S_IWUSR | S_IRUGO | S_IWGRP, show_cec_config, store_cec_config);
 //static DEVICE_ATTR(cec_config, S_IWUGO | S_IRUGO , NULL, store_cec_config);
 static DEVICE_ATTR(cec_lang_config, S_IWUSR | S_IRUGO | S_IWGRP, show_cec_lang_config, store_cec_lang_config);
+#else
+static DEVICE_ATTR(amlogic_cec_debug_config, S_IWUSR | S_IRUGO | S_IWGRP, show_amlogic_cec_debug_config, store_amlogic_cec_debug_config);
+#endif
 
 /*****************************
 *    hdmitx display client interface
@@ -978,8 +985,6 @@ static int hdmitx_notify_callback_v(struct notifier_block *block, unsigned long 
         return 0;
 	
 #ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION	
-	if(suspend_flag==1)
- 		return 0;
 	// vic_ready got from IP
     vic_ready = hdmitx_device.HWOp.GetState(&hdmitx_device, STAT_VIDEO_VIC, 0);
 	// get current vinfo
@@ -1438,11 +1443,6 @@ static int get_dt_vend_init_data(struct device_node *np, struct vendor_info_data
         return 1;
     }
     
-    ret = of_property_read_u32(np, "cec_config", &(vend->cec_config));
-    if(ret) {
-        hdmi_print(INF, SYS "not find cec config\n");
-        return 1;
-    }
     ret = of_property_read_u32(np, "ao_cec", &(vend->ao_cec));
     if(ret) {
         hdmi_print(INF, SYS "not find ao cec\n");
@@ -1541,7 +1541,9 @@ static void hdmitx_pwr_init(struct hdmi_pwr_ctl *ctl)
 
 static int amhdmitx_probe(struct platform_device *pdev)
 {
+#ifndef CONFIG_AML_HDMI_TX_NEW_CEC_DRIVER
     extern struct switch_dev lang_dev;
+#endif
     int r,ret=0;
 
 #ifdef CONFIG_USE_OF
@@ -1602,9 +1604,13 @@ static int amhdmitx_probe(struct platform_device *pdev)
     ret=device_create_file(hdmitx_dev, &dev_attr_hdcp_ksv_info);
     ret=device_create_file(hdmitx_dev, &dev_attr_hpd_state);
     ret=device_create_file(hdmitx_dev, &dev_attr_support_3d);
+#ifndef CONFIG_AML_HDMI_TX_NEW_CEC_DRIVER
     ret=device_create_file(hdmitx_dev, &dev_attr_cec);
     ret=device_create_file(hdmitx_dev, &dev_attr_cec_config);
     ret=device_create_file(hdmitx_dev, &dev_attr_cec_lang_config);
+#else
+    ret=device_create_file(hdmitx_dev, &dev_attr_amlogic_cec_debug_config);
+#endif
 
     if (hdmitx_dev == NULL) {
         hdmi_print(ERR, SYS "device_create create error\n");
@@ -1691,7 +1697,9 @@ static int amhdmitx_probe(struct platform_device *pdev)
     }
 #endif
     switch_dev_register(&sdev);
+#ifndef CONFIG_AML_HDMI_TX_NEW_CEC_DRIVER
     switch_dev_register(&lang_dev);
+#endif
 
     hdmitx_init_parameters(&hdmitx_device.hdmi_info);
     HDMITX_Meson_Init(&hdmitx_device);
@@ -1730,7 +1738,9 @@ static int amhdmitx_remove(struct platform_device *pdev)
     device_remove_file(hdmitx_dev, &dev_attr_disp_cap_3d);
     device_remove_file(hdmitx_dev, &dev_attr_hpd_state);
     device_remove_file(hdmitx_dev, &dev_attr_support_3d);
+#ifndef CONFIG_AML_HDMI_TX_NEW_CEC_DRIVER
     device_remove_file(hdmitx_dev, &dev_attr_cec);
+#endif
 
     cdev_del(&hdmitx_device.cdev);
 
@@ -1969,11 +1979,20 @@ static  int __init hdmitx_boot_para_setup(char *s)
 
 __setup("hdmitx=",hdmitx_boot_para_setup);
 
+static int dvi_mode = VOUTMODE_HDMI;
+
+int odroidc_voutmode(void)
+{
+	return dvi_mode;
+}
+EXPORT_SYMBOL(odroidc_voutmode);
+
 static  int __init vout_setup(char *s) {
-	if(strcmp(s, "dvi"))
-		dvi_mode = 0;
-	else
-		dvi_mode = 1;
+	dvi_mode = VOUTMODE_HDMI;
+	if (!strcmp(s, "dvi"))
+		dvi_mode = VOUTMODE_DVI;
+	else if (!strcmp(s, "vga"))
+		dvi_mode = VOUTMODE_VGA;
 	return 0;
 }
 __setup("vout=", vout_setup);
