@@ -208,6 +208,7 @@ unsigned int am_uart_tx_empty(struct uart_port *port)
 
 	return ( mode & UART_TXEMPTY) ? TIOCSER_TEMT : 0;
 }
+EXPORT_SYMBOL(am_uart_tx_empty);
 
 static unsigned int am_uart_get_mctrl(struct uart_port *port)
 {
