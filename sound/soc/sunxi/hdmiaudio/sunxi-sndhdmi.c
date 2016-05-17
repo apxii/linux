@@ -29,6 +29,7 @@
 #include "sunxi-hdmitdm.h"
 #endif
 int hdmi_format = 1;
+EXPORT_SYMBOL(hdmi_format);
 #if defined (CONFIG_ARCH_SUN9I) || defined (CONFIG_ARCH_SUN8IW7) || defined (CONFIG_ARCH_SUN8IW6)
 /*i2s1 as master, hdmi as slave*/
 static int i2s1_master 		= 4;
