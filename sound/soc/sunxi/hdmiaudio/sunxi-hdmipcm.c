@@ -166,6 +166,7 @@ int hdmi_transfer_format_61937_to_60958(int *out,short* temp, int samples)
 	return 0;
 }
 
+extern int hdmi_format;
 static int sunxi_pcm_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *params)
 {
@@ -473,7 +474,7 @@ static struct snd_soc_platform_driver sunxi_soc_platform_hdmiaudio = {
 		.pcm_free	= sunxi_pcm_free_dma_buffers,
 };
 
-static int __init sunxi_hdmiaudio_pcm_probe(struct platform_device *pdev)
+static int __devinit sunxi_hdmiaudio_pcm_probe(struct platform_device *pdev)
 {
 	return snd_soc_register_platform(&pdev->dev, &sunxi_soc_platform_hdmiaudio);
 }

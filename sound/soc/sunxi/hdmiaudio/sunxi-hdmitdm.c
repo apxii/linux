@@ -491,6 +491,7 @@ static int sunxi_daudio_set_fmt(struct snd_soc_dai *cpu_dai, unsigned int fmt)
 	return 0;
 }
 
+extern int hdmi_format;
 static int sunxi_daudio_hw_params(struct snd_pcm_substream *substream,
 																struct snd_pcm_hw_params *params,
 																struct snd_soc_dai *dai)
@@ -711,7 +712,7 @@ static struct snd_soc_dai_driver sunxi_daudio_dai = {
 };
 
 static struct pinctrl *daudio_pinctrl;
-static int __init sunxi_daudio_dev_probe(struct platform_device *pdev)
+static int __devinit sunxi_daudio_dev_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	int reg_val = 0;

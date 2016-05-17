@@ -491,7 +491,7 @@ static struct snd_soc_dai_driver sunxi_pcm_dai = {
 	#endif
 };
 
-static int __init sunxi_pcm_dev_probe(struct platform_device *pdev)
+static int __devinit sunxi_pcm_dev_probe(struct platform_device *pdev)
 {
 	int err = -1;
 

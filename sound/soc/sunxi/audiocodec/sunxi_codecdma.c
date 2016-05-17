@@ -314,7 +314,7 @@ static struct snd_soc_platform_driver sunxi_soc_platform = {
 	.pcm_free	= sunxi_pcm_free_dma_buffers,
 };
 
-static int __init sunxi_codec_pcm_probe(struct platform_device *pdev)
+static int __devinit sunxi_codec_pcm_probe(struct platform_device *pdev)
 {
 	return snd_soc_register_platform(&pdev->dev, &sunxi_soc_platform);
 }

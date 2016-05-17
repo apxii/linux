@@ -62,6 +62,7 @@ void audio_set_hdmi_func(__audio_hdmi_func *hdmi_func)
 }
 EXPORT_SYMBOL(audio_set_hdmi_func);
 
+extern int hdmi_format;
 static int sndhdmi_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *params,
 	struct snd_soc_dai *dai)
@@ -332,7 +333,7 @@ static struct snd_soc_codec_driver soc_codec_dev_sndhdmi = {
 	.resume 	= sunxi_sndhdmi_resume,
 };
 
-static int __init sndhdmi_codec_probe(struct platform_device *pdev)
+static int __devinit sndhdmi_codec_probe(struct platform_device *pdev)
 {	
 	if (!pdev) {
 		pr_err("error:%s,line:%d\n", __func__, __LINE__);
