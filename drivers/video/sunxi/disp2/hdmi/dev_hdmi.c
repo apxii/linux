@@ -148,7 +148,7 @@ static ssize_t hdmi_edid_store(struct device *dev,
 
 static DEVICE_ATTR(edid, S_IRUGO|S_IWUSR|S_IWGRP,hdmi_edid_show, hdmi_edid_store);
 
-static int __init hdmi_probe(struct platform_device *pdev)
+static int __devinit hdmi_probe(struct platform_device *pdev)
 {
 	__inf("hdmi_probe call\n");
 	memset(&ghdmi, 0, sizeof(hdmi_info_t));

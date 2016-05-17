@@ -30,7 +30,7 @@ struct platform_device tv_device =
 
 
 
-static int __init tv_probe(struct platform_device *pdev)
+static int __devinit tv_probe(struct platform_device *pdev)
 {
 	int ret;
 	memset(&g_tv_info, 0, sizeof(struct tv_info_t));
