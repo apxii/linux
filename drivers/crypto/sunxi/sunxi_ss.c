@@ -784,7 +784,7 @@ static int __devinit sunxi_ss_res_request(struct platform_device *pdev)
 }
 
 /* Release the resource: IRQ, mem */
-static int __devexit sunxi_ss_res_release(sunxi_ss_t *sss)
+static int sunxi_ss_res_release(sunxi_ss_t *sss)
 {
 #ifdef SS_IDMA_ENABLE
 	int i;
@@ -1038,7 +1038,7 @@ err0:
 	return ret;
 }
 
-static int __devexit sunxi_ss_remove(struct platform_device *pdev)
+static int sunxi_ss_remove(struct platform_device *pdev)
 {
 	sunxi_ss_t *sss = platform_get_drvdata(pdev);
 
@@ -1141,7 +1141,7 @@ static struct platform_device sunxi_ss_device = {
 	.name = SUNXI_SS_DEV_NAME,
 	.resource = sunxi_ss_resources,
 	.num_resources = 2,
-	.dev.release = sunxi_ss_release,
+	.dev.release = __devexit_p(sunxi_ss_release),
 };
 
 static int __init sunxi_ss_init(void)
