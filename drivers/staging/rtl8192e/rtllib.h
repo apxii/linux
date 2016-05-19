@@ -2567,7 +2567,7 @@ static inline void *rtllib_priv(struct net_device *dev)
 	return ((struct rtllib_device *)netdev_priv(dev))->priv;
 }
 
-extern inline int rtllib_is_empty_essid(const char *essid, int essid_len)
+inline int rtllib_is_empty_essid(const char *essid, int essid_len)
 {
 	/* Single white space is for Linksys APs */
 	if (essid_len == 1 && essid[0] == ' ')
@@ -2583,7 +2583,7 @@ extern inline int rtllib_is_empty_essid(const char *essid, int essid_len)
 	return 1;
 }
 
-extern inline int rtllib_is_valid_mode(struct rtllib_device *ieee, int mode)
+inline int rtllib_is_valid_mode(struct rtllib_device *ieee, int mode)
 {
 	/*
 	 * It is possible for both access points and our device to support
@@ -2609,7 +2609,7 @@ extern inline int rtllib_is_valid_mode(struct rtllib_device *ieee, int mode)
 	return 0;
 }
 
-extern inline int rtllib_get_hdrlen(u16 fc)
+inline int rtllib_get_hdrlen(u16 fc)
 {
 	int hdrlen = RTLLIB_3ADDR_LEN;
 
@@ -2761,7 +2761,7 @@ extern void rtllib_stop_scan(struct rtllib_device *ieee);
 extern bool rtllib_act_scanning(struct rtllib_device *ieee, bool sync_scan);
 extern void rtllib_stop_scan_syncro(struct rtllib_device *ieee);
 extern void rtllib_start_scan_syncro(struct rtllib_device *ieee, u8 is_mesh);
-extern inline struct sk_buff *rtllib_probe_req(struct rtllib_device *ieee);
+extern struct sk_buff *rtllib_probe_req(struct rtllib_device *ieee);
 extern u8 MgntQuery_MgntFrameTxRate(struct rtllib_device *ieee);
 extern void rtllib_sta_ps_send_null_frame(struct rtllib_device *ieee,
 					  short pwr);
@@ -2943,12 +2943,12 @@ void rtllib_softmac_scan_syncro(struct rtllib_device *ieee, u8 is_mesh);
 
 extern const long rtllib_wlan_frequencies[];
 
-extern inline void rtllib_increment_scans(struct rtllib_device *ieee)
+inline void rtllib_increment_scans(struct rtllib_device *ieee)
 {
 	ieee->scans++;
 }
 
-extern inline int rtllib_get_scans(struct rtllib_device *ieee)
+inline int rtllib_get_scans(struct rtllib_device *ieee)
 {
 	return ieee->scans;
 }
