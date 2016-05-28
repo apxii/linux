@@ -1355,6 +1355,8 @@ static void mac_from_efuse_to_DEFMAC(void)
 	int i;
 	
 	efuse_mac = aml_efuse_get_item("mac");
+	if(!efuse_mac)
+		return;
 	for (i = 0; i < 6 && efuse_mac[0] != '\0' && efuse_mac[1] != '\0'; i++) {
 		mac[i] = chartonum(efuse_mac[0]) << 4 | chartonum(efuse_mac[1]);
 		efuse_mac += 3;
