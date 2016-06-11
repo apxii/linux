@@ -1087,11 +1087,6 @@ error_exit:
 }
 #endif
 
-#include <plat/sys_config.h>
-extern int sw_usb_disable_hcd(__u32 usbc_no);
-extern int sw_usb_enable_hcd(__u32 usbc_no);
-static int usb_wifi_host = 2;
-
 extern char* ifname;
 /*
  * drv_init() - a device potentially for us
@@ -1428,22 +1423,6 @@ static int __init rtw_drv_entry(void)
 	writel(tmp,(volatile unsigned int*)0xb801a608);//write dummy register for 1055
 #endif
 
-
-	RT_TRACE(_module_hci_intfs_c_,_drv_err_,("+rtw_drv_entry\n"));
-	
-	/* ----------get usb_wifi_usbc_num------------- */
-	ret = script_parser_fetch("usb_wifi_para", "usb_wifi_usbc_num", (int *)&usb_wifi_host, 64);
-	if(ret != 0){
-		ERR_8192C("ERR: script_parser_fetch usb_wifi_usbc_num failed\n");
-		ret = -ENOMEM;
-		return ret;
-	}
-
-#ifdef CONFIG_USB_SW_SUNXI_USB
-	MSG_8192C("sw_usb_enable_hcd: usbc_num = %d\n", usb_wifi_host);
-	sw_usb_enable_hcd(usb_wifi_host);
-#endif
-
 	DBG_8192C("\nrtw driver version=%s\n", DRIVERVERSION);		
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,24)) 
 	//console_suspend_enabled=0;
@@ -1465,11 +1444,6 @@ static void __exit rtw_drv_halt(void)
 	drvpriv.drv_registered = _FALSE;
 	usb_deregister(&drvpriv.rtw_usb_drv);
 	DBG_8192C("-rtw_drv_halt\n");
-
-#ifdef CONFIG_USB_SW_SUNXI_USB
-	MSG_8192C("sw_usb_disable_hcd: usbc_num = %d\n", usb_wifi_host);
-	sw_usb_disable_hcd(usb_wifi_host);
-#endif
 }
 
 
