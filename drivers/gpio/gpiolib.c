@@ -1082,6 +1082,9 @@ int gpiochip_add(struct gpio_chip *chip)
 				: 0;
 		}
 	}
+#ifdef CONFIG_PINCTRL
+	INIT_LIST_HEAD(&chip->pin_ranges);
+#endif
 
 	of_gpiochip_add(chip);
 
