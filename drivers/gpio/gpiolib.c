@@ -1103,8 +1103,11 @@ int gpiochip_add(struct gpio_chip *chip)
 				? (1 << FLAG_IS_OUT)
 				: 0;
 		}
-		of_gpiochip_add(chip);
 	}
+#ifdef CONFIG_PINCTRL
+	INIT_LIST_HEAD(&chip->pin_ranges);
+#endif
+	of_gpiochip_add(chip);
 
 unlock:
 	spin_unlock_irqrestore(&gpio_lock, flags);
