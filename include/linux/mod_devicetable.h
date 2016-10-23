@@ -573,7 +573,7 @@ struct x86_cpu_id {
  * Generic table type for matching CPU features.
  * @feature:	the bit number of the feature (0 - 65535)
  */
-
+#define cpu_device_id cpu_feature
 struct cpu_feature {
 	__u16	feature;
 };
