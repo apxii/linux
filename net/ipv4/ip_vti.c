@@ -114,7 +114,7 @@ static netdev_tx_t vti_tunnel_xmit(struct sk_buff *skb, struct net_device *dev)
 			   be32_to_cpu(tunnel->parms.o_key), RT_TOS(tos),
 			   RT_SCOPE_UNIVERSE,
 			   IPPROTO_IPIP, 0,
-			   dst, tiph->saddr, 0, 0);
+			   dst, tiph->saddr, 0, 0, sock_i_uid(skb->sk));
 	rt = ip_route_output_key(dev_net(dev), &fl4);
 	if (IS_ERR(rt)) {
 		dev->stats.tx_carrier_errors++;
