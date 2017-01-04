@@ -60,6 +60,7 @@
 #include <linux/amlogic/hdmi_tx/hdmi_config.h>
 #include <linux/i2c.h>
 #include "hw/tvenc_conf.h"
+#include "hw/mach_reg.h"
 
 #define DEVICE_NAME "amhdmitx"
 #define HDMI_TX_COUNT 32
@@ -231,12 +232,15 @@ static int debug_level = IMP;
 
 void control_hdmiphy(int on)
 {
-	if (on)
-		hdmitx_device.HWOp.CntlMisc(&hdmitx_device, MISC_TMDS_PHY_OP,
-			TMDS_PHY_ENABLE);
-	else
+	if (on) {
+		if (hd_read_reg(P_HHI_HDMI_PHY_CNTL0) == 0x0) {
+			hdmitx_device.HWOp.CntlMisc(&hdmitx_device,
+				MISC_TMDS_PHY_OP, TMDS_PHY_ENABLE);
+		}
+	} else {
 		hdmitx_device.HWOp.CntlMisc(&hdmitx_device, MISC_TMDS_PHY_OP,
 			TMDS_PHY_DISABLE);
+	}
 }
 
 /*****************************
@@ -988,6 +992,7 @@ const char *disp_mode_t[] = {
 	/* VESA modes */
 	"640x480p60hz",
 	"800x480p60hz",
+	"480x800p60hz",
 	"800x600p60hz",
 	"1024x600p60hz",
 	"1024x768p60hz",
