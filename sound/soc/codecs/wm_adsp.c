@@ -187,7 +187,7 @@ static struct wm_adsp_buf *wm_adsp_buf_alloc(const void *src, size_t len,
 
 	buf->buf = vmalloc(len);
 	if (!buf->buf) {
-		vfree(buf);
+		kfree(buf);
 		return NULL;
 	}
 	memcpy(buf->buf, src, len);
@@ -451,7 +451,6 @@ struct wm_coeff_ctl {
 	unsigned int offset;
 	size_t len;
 	unsigned int set:1;
-	struct snd_kcontrol *kcontrol;
 	struct soc_bytes_ext bytes_ext;
 	unsigned int flags;
 	unsigned int type;
@@ -1132,13 +1131,11 @@ static int wmfw_add_ctl(struct wm_adsp *dsp, struct wm_coeff_ctl *ctl)
 		break;
 	}
 
-	ret = snd_soc_add_card_controls(dsp->card, kcontrol, 1);
+	ret = snd_soc_add_codec_controls(dsp->codec, kcontrol, 1);
 	if (ret < 0)
 		goto err_kcontrol;
 
 	kfree(kcontrol);
-
-	ctl->kcontrol = snd_soc_card_get_kcontrol(dsp->card, ctl->name);
 
 	return 0;
 
@@ -1192,6 +1189,9 @@ static void wm_adsp_signal_event_controls(struct wm_adsp *dsp,
 
 	list_for_each_entry(ctl, &dsp->ctl_list, list) {
 		if (ctl->type != WMFW_CTL_TYPE_HOSTEVENT)
+			continue;
+
+		if (!ctl->enabled)
 			continue;
 
 		ret = wm_coeff_write_acked_control(ctl, event);
@@ -2298,7 +2298,7 @@ int wm_adsp1_event(struct snd_soc_dapm_widget *w,
 	int ret;
 	unsigned int val;
 
-	dsp->card = codec->component.card;
+	dsp->codec = codec;
 
 	mutex_lock(&dsp->pwr_lock);
 
@@ -2509,8 +2509,6 @@ int wm_adsp2_early_event(struct snd_soc_dapm_widget *w,
 	struct wm_adsp *dsp = &dsps[w->shift];
 	struct wm_coeff_ctl *ctl;
 
-	dsp->card = codec->component.card;
-
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
 		wm_adsp2_set_dspclk(dsp, freq);
@@ -2577,8 +2575,13 @@ int wm_adsp2_event(struct snd_soc_dapm_widget *w,
 
 		mutex_lock(&dsp->pwr_lock);
 
-		if (wm_adsp_fw[dsp->fw].num_caps != 0)
+		if (wm_adsp_fw[dsp->fw].num_caps != 0) {
 			ret = wm_adsp_buffer_init(dsp);
+			if (ret < 0) {
+				mutex_unlock(&dsp->pwr_lock);
+				goto err;
+			}
+		}
 
 		mutex_unlock(&dsp->pwr_lock);
 
@@ -2628,6 +2631,8 @@ EXPORT_SYMBOL_GPL(wm_adsp2_event);
 
 int wm_adsp2_codec_probe(struct wm_adsp *dsp, struct snd_soc_codec *codec)
 {
+	dsp->codec = codec;
+
 	wm_adsp2_init_debugfs(dsp, codec);
 
 	return snd_soc_add_codec_controls(codec,

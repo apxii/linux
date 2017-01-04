@@ -428,6 +428,7 @@ struct rsnd_dai_stream {
 };
 #define rsnd_io_to_mod(io, i)	((i) < RSND_MOD_MAX ? (io)->mod[(i)] : NULL)
 #define rsnd_io_to_mod_ssi(io)	rsnd_io_to_mod((io), RSND_MOD_SSI)
+#define rsnd_io_to_mod_ssiu(io)	rsnd_io_to_mod((io), RSND_MOD_SSIU)
 #define rsnd_io_to_mod_ssip(io)	rsnd_io_to_mod((io), RSND_MOD_SSIP)
 #define rsnd_io_to_mod_src(io)	rsnd_io_to_mod((io), RSND_MOD_SRC)
 #define rsnd_io_to_mod_ctu(io)	rsnd_io_to_mod((io), RSND_MOD_CTU)
@@ -498,6 +499,9 @@ int rsnd_adg_set_src_timesel_gen2(struct rsnd_mod *src_mod,
 				  unsigned int out_rate);
 int rsnd_adg_set_cmd_timsel_gen2(struct rsnd_mod *mod,
 				 struct rsnd_dai_stream *io);
+#define rsnd_adg_clk_enable(priv)	rsnd_adg_clk_control(priv, 1)
+#define rsnd_adg_clk_disable(priv)	rsnd_adg_clk_control(priv, 0)
+void rsnd_adg_clk_control(struct rsnd_priv *priv, int enable);
 
 /*
  *	R-Car sound priv

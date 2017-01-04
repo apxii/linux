@@ -306,7 +306,7 @@ u32 rsnd_get_adinr_bit(struct rsnd_mod *mod, struct rsnd_dai_stream *io)
  */
 u32 rsnd_get_dalign(struct rsnd_mod *mod, struct rsnd_dai_stream *io)
 {
-	struct rsnd_mod *ssi = rsnd_io_to_mod_ssi(io);
+	struct rsnd_mod *ssiu = rsnd_io_to_mod_ssiu(io);
 	struct rsnd_mod *target;
 	struct snd_pcm_runtime *runtime = rsnd_io_to_runtime(io);
 	u32 val = 0x76543210;
@@ -315,11 +315,11 @@ u32 rsnd_get_dalign(struct rsnd_mod *mod, struct rsnd_dai_stream *io)
 	if (rsnd_io_is_play(io)) {
 		struct rsnd_mod *src = rsnd_io_to_mod_src(io);
 
-		target = src ? src : ssi;
+		target = src ? src : ssiu;
 	} else {
 		struct rsnd_mod *cmd = rsnd_io_to_mod_cmd(io);
 
-		target = cmd ? cmd : ssi;
+		target = cmd ? cmd : ssiu;
 	}
 
 	mask <<= runtime->channels * 4;
@@ -1126,8 +1126,8 @@ static int rsnd_pcm_new(struct snd_soc_pcm_runtime *rtd)
 
 	return snd_pcm_lib_preallocate_pages_for_all(
 		rtd->pcm,
-		SNDRV_DMA_TYPE_DEV,
-		rtd->card->snd_card->dev,
+		SNDRV_DMA_TYPE_CONTINUOUS,
+		snd_dma_continuous_data(GFP_KERNEL),
 		PREALLOC_BUFFER, PREALLOC_BUFFER_MAX);
 }
 
@@ -1308,9 +1308,33 @@ static int rsnd_remove(struct platform_device *pdev)
 	return ret;
 }
 
+static int rsnd_suspend(struct device *dev)
+{
+	struct rsnd_priv *priv = dev_get_drvdata(dev);
+
+	rsnd_adg_clk_disable(priv);
+
+	return 0;
+}
+
+static int rsnd_resume(struct device *dev)
+{
+	struct rsnd_priv *priv = dev_get_drvdata(dev);
+
+	rsnd_adg_clk_enable(priv);
+
+	return 0;
+}
+
+static struct dev_pm_ops rsnd_pm_ops = {
+	.suspend		= rsnd_suspend,
+	.resume			= rsnd_resume,
+};
+
 static struct platform_driver rsnd_driver = {
 	.driver	= {
 		.name	= "rcar_sound",
+		.pm	= &rsnd_pm_ops,
 		.of_match_table = rsnd_of_match,
 	},
 	.probe		= rsnd_probe,

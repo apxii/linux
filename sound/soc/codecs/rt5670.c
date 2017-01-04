@@ -2813,6 +2813,7 @@ MODULE_DEVICE_TABLE(i2c, rt5670_i2c_id);
 #ifdef CONFIG_ACPI
 static const struct acpi_device_id rt5670_acpi_match[] = {
 	{ "10EC5670", 0},
+	{ "10EC5672", 0},
 	{ },
 };
 MODULE_DEVICE_TABLE(acpi, rt5670_acpi_match);
@@ -2824,6 +2825,13 @@ static const struct dmi_system_id dmi_platform_intel_braswell[] = {
 		.matches = {
 			DMI_MATCH(DMI_SYS_VENDOR, "Intel Corporation"),
 			DMI_MATCH(DMI_BOARD_NAME, "Braswell CRB"),
+		},
+	},
+	{
+		.ident = "Dell Wyse 3040",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+			DMI_MATCH(DMI_PRODUCT_NAME, "Wyse 3040"),
 		},
 	},
 	{}
