@@ -514,7 +514,8 @@ static int set_disp_mode_auto(void)
 		vic_ready = HDMI_Unkown;
 #endif
 
-	if ((vic_ready != HDMI_Unkown) && (vic_ready == vic)) {
+	if ((vic_ready != HDMI_Unkown) && (vic_ready == vic)
+		&& (!hdmi_output_rgb)) {
 		hdmi_print(IMP, SYS "[%s] ALREADY init VIC = %d\n",
 			__func__, vic);
 #if defined(CONFIG_ARCH_MESON64_ODROIDC2)
@@ -604,6 +605,27 @@ static unsigned char is_dispmode_valid_for_hdmi(void)
 }
 
 /*disp_mode attr*/
+static ssize_t show_output_rgb(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	int pos = 0;
+	pos += snprintf(buf+pos, PAGE_SIZE, "%c\n", hdmi_output_rgb + '0');
+	return pos;
+}
+
+static ssize_t store_output_rgb(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t count)
+{
+	if (strncmp(buf, "0", 1) == 0)
+		hdmi_output_rgb = 0;
+	else if (strncmp(buf, "1", 1) == 0)
+		hdmi_output_rgb = 1;
+
+	hdmitx_set_display(&hdmitx_device, hdmitx_device.cur_VIC);
+
+	return count;
+}
+
 static ssize_t show_disp_mode(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
@@ -1278,6 +1300,8 @@ static DEVICE_ATTR(hdcp_ksv_info, S_IRUGO, show_hdcp_ksv_info,
 static DEVICE_ATTR(hpd_state, S_IRUGO, show_hpd_state, NULL);
 static DEVICE_ATTR(support_3d, S_IRUGO, show_support_3d,
 	NULL);
+static DEVICE_ATTR(output_rgb, S_IWUSR | S_IRUGO | S_IWGRP,
+	show_output_rgb, store_output_rgb);
 
 /*****************************
 *	hdmitx display client interface
@@ -2058,6 +2082,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	ret = device_create_file(dev, &dev_attr_hdcp_byp);
 	ret = device_create_file(dev, &dev_attr_hpd_state);
 	ret = device_create_file(dev, &dev_attr_support_3d);
+	ret = device_create_file(dev, &dev_attr_output_rgb);
 #ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION
 	register_hdmi_edid_supported_func(hdmitx_is_vmode_supported);
 #endif
@@ -2254,6 +2279,7 @@ static int amhdmitx_remove(struct platform_device *pdev)
 	device_remove_file(dev, &dev_attr_disp_cap_3d);
 	device_remove_file(dev, &dev_attr_hpd_state);
 	device_remove_file(dev, &dev_attr_support_3d);
+	device_remove_file(dev, &dev_attr_output_rgb);
 
 	cdev_del(&hdmitx_device.cdev);
 
