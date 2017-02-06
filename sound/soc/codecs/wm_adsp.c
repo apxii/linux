@@ -2473,7 +2473,7 @@ static void wm_adsp2_boot_work(struct work_struct *work)
 
 	ret = wm_adsp2_ena(dsp);
 	if (ret != 0)
-		goto err_mutex;
+		goto err_mem;
 
 	ret = wm_adsp_load(dsp);
 	if (ret != 0)
@@ -2492,13 +2492,13 @@ static void wm_adsp2_boot_work(struct work_struct *work)
 	if (ret != 0)
 		goto err_ena;
 
-	dsp->booted = true;
-
 	/* Turn DSP back off until we are ready to run */
 	ret = regmap_update_bits(dsp->regmap, dsp->base + ADSP2_CONTROL,
 				 ADSP2_SYS_ENA, 0);
 	if (ret != 0)
 		goto err_ena;
+
+	dsp->booted = true;
 
 	mutex_unlock(&dsp->pwr_lock);
 
@@ -2507,6 +2507,9 @@ static void wm_adsp2_boot_work(struct work_struct *work)
 err_ena:
 	regmap_update_bits(dsp->regmap, dsp->base + ADSP2_CONTROL,
 			   ADSP2_SYS_ENA | ADSP2_CORE_ENA | ADSP2_START, 0);
+err_mem:
+	regmap_update_bits(dsp->regmap, dsp->base + ADSP2_CONTROL,
+			   ADSP2_MEM_ENA, 0);
 err_mutex:
 	mutex_unlock(&dsp->pwr_lock);
 }
@@ -2575,6 +2578,8 @@ int wm_adsp2_early_event(struct snd_soc_dapm_widget *w,
 		queue_work(system_unbound_wq, &dsp->boot_work);
 		break;
 	case SND_SOC_DAPM_PRE_PMD:
+		mutex_lock(&dsp->pwr_lock);
+
 		wm_adsp_debugfs_clear(dsp);
 
 		dsp->fw_id = 0;
@@ -2589,6 +2594,8 @@ int wm_adsp2_early_event(struct snd_soc_dapm_widget *w,
 			ctl->enabled = 0;
 
 		wm_adsp_free_alg_regions(dsp);
+
+		mutex_unlock(&dsp->pwr_lock);
 
 		adsp_dbg(dsp, "Shutdown complete\n");
 		break;
@@ -2612,8 +2619,12 @@ int wm_adsp2_event(struct snd_soc_dapm_widget *w,
 	case SND_SOC_DAPM_POST_PMU:
 		flush_work(&dsp->boot_work);
 
-		if (!dsp->booted)
-			return -EIO;
+		mutex_lock(&dsp->pwr_lock);
+
+		if (!dsp->booted) {
+			ret = -EIO;
+			goto err;
+		}
 
 		ret = wm_adsp2_ena(dsp);
 		if (ret != 0)
@@ -2631,17 +2642,13 @@ int wm_adsp2_event(struct snd_soc_dapm_widget *w,
 		if (ret != 0)
 			goto err;
 
-		dsp->running = true;
-
-		mutex_lock(&dsp->pwr_lock);
-
 		if (wm_adsp_fw[dsp->fw].num_caps != 0) {
 			ret = wm_adsp_buffer_init(dsp);
-			if (ret < 0) {
-				mutex_unlock(&dsp->pwr_lock);
+			if (ret < 0)
 				goto err;
-			}
 		}
+
+		dsp->running = true;
 
 		mutex_unlock(&dsp->pwr_lock);
 
@@ -2685,6 +2692,7 @@ int wm_adsp2_event(struct snd_soc_dapm_widget *w,
 err:
 	regmap_update_bits(dsp->regmap, dsp->base + ADSP2_CONTROL,
 			   ADSP2_SYS_ENA | ADSP2_CORE_ENA | ADSP2_START, 0);
+	mutex_unlock(&dsp->pwr_lock);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(wm_adsp2_event);
