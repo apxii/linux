@@ -716,7 +716,8 @@ static const struct dev_pm_ops geth_pm_ops = {
 static const struct dev_pm_ops geth_pm_ops;
 #endif /* CONFIG_PM */
 
-
+#if 0
+/* Unused */
 /*****************************************************************************
  *
  *
@@ -777,6 +778,7 @@ static void geth_chip_hwaddr(u8 *addr)
 out:
 	crypto_free_hash(tfm);
 }
+#endif
 
 static void geth_check_addr(struct net_device *ndev, unsigned char *mac)
 {

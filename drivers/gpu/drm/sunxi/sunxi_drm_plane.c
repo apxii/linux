@@ -838,13 +838,6 @@ struct sunxi_hardware_ops plane_ops = {
     .vsync_delayed_do = sunxi_plane_delayed,
 };
 
-static const struct drm_prop_enum_list layer_mode_names[] = {
-	{ CRTC_MODE_3D,     "normal_mode" },
-	{ CRTC_MODE_ENHANCE, "enhance" },
-    { CRTC_MODE_ENHANCE_HF, "enhance_half" },
-    { CRTC_MODE_SMART_LIGHT, "smart_light" },//ToDo
-};
-
 void sunxi_reset_plane(struct drm_crtc *crtc)
 {
     int i;
@@ -859,12 +852,12 @@ struct drm_plane *sunxi_plane_init(struct drm_device *dev,struct drm_crtc *crtc,
             struct disp_layer_config_data *cfg, int chn, int plane_id, bool priv)
 {
 	struct sunxi_drm_plane  *sunxi_plane;
-    struct drm_plane	    *plane;
-    struct sunxi_drm_crtc   *sunxi_crtc = to_sunxi_crtc(crtc);
-    bool video = 0;
-    int vi_chn;
+	struct drm_plane	    *plane;
+	struct sunxi_drm_crtc   *sunxi_crtc = to_sunxi_crtc(crtc);
+	bool video = 0;
+	int vi_chn;
 
-    int err;
+	int err;
 	DRM_DEBUG_KMS("[%d]\n", __LINE__);
 
 	sunxi_plane = kzalloc(sizeof(struct sunxi_drm_plane), GFP_KERNEL);
@@ -873,9 +866,9 @@ struct drm_plane *sunxi_plane_init(struct drm_device *dev,struct drm_crtc *crtc,
 		return NULL;
 	}
 
-    vi_chn = sunxi_drm_get_vi_pipe_by_crtc(sunxi_crtc->crtc_id);
-    if (vi_chn > chn)
-        video = 1;
+	vi_chn = sunxi_drm_get_vi_pipe_by_crtc(sunxi_crtc->crtc_id);
+	if (vi_chn > chn)
+		video = 1;
 
 	err = drm_plane_init(dev, &sunxi_plane->drm_plane, 1 << sunxi_crtc->crtc_id,
 			      &sunxi_plane_funcs, video ? vi_formats : ui_formats,
@@ -887,29 +880,29 @@ struct drm_plane *sunxi_plane_init(struct drm_device *dev,struct drm_crtc *crtc,
 		return NULL;
 	}
 
-    sunxi_plane->hw_res = kzalloc(sizeof(struct sunxi_hardware_res), GFP_KERNEL);
-    if (!sunxi_plane->hw_res) {
-        DRM_ERROR("failed to allocate sunxi_hardware_res\n");
-        kfree(sunxi_plane);
+	sunxi_plane->hw_res = kzalloc(sizeof(struct sunxi_hardware_res), GFP_KERNEL);
+	if (!sunxi_plane->hw_res) {
+		DRM_ERROR("failed to allocate sunxi_hardware_res\n");
+		kfree(sunxi_plane);
 		return NULL;
-    }
+	}
 
-    sunxi_plane->hw_res->ops = &plane_ops;
-    sunxi_plane->chn_id = chn;
-    sunxi_plane->isvideo = video;
-    sunxi_plane->crtc_id = sunxi_crtc->crtc_id;
-    sunxi_plane->plane_cfg = cfg;
-    cfg->config.channel = chn;
-    cfg->config.layer_id = plane_id;
-    mutex_init(&sunxi_plane->delayed_work_lock);
-    plane = &sunxi_plane->drm_plane;
+	sunxi_plane->hw_res->ops = &plane_ops;
+	sunxi_plane->chn_id = chn;
+	sunxi_plane->isvideo = video;
+	sunxi_plane->crtc_id = sunxi_crtc->crtc_id;
+	sunxi_plane->plane_cfg = cfg;
+	cfg->config.channel = chn;
+	cfg->config.layer_id = plane_id;
+	mutex_init(&sunxi_plane->delayed_work_lock);
+	plane = &sunxi_plane->drm_plane;
 	if (priv) {
-        /* for the Hardware Cursor if have*/
+		/* for the Hardware Cursor if have*/
 		sunxi_crtc->harware_cursor = &sunxi_plane->drm_plane;
-	}else{
-        drm_object_attach_property(&plane->base, sunxi_crtc->channel_id_property, chn);
-        drm_object_attach_property(&plane->base, sunxi_crtc->plane_zpos_property, 0);
-        drm_object_attach_property(&plane->base, sunxi_crtc->plane_id_chn_property, plane_id);
+	} else {
+		drm_object_attach_property(&plane->base, sunxi_crtc->channel_id_property, chn);
+		drm_object_attach_property(&plane->base, sunxi_crtc->plane_zpos_property, 0);
+		drm_object_attach_property(&plane->base, sunxi_crtc->plane_id_chn_property, plane_id);
 	}
 
 	return &sunxi_plane->drm_plane;

@@ -1344,7 +1344,7 @@ void sunxi_lcd_private_destroy(struct sunxi_lcd_private *sunxi_lcd_p)
 {
     if (sunxi_lcd_p->panel)
         kfree(sunxi_lcd_p->panel);
-    if (sunxi_lcd_p->extend_panel);
+    if (sunxi_lcd_p->extend_panel)
         kfree(sunxi_lcd_p->extend_panel);
     if (sunxi_lcd_p->lcd_cfg)
         kfree(sunxi_lcd_p->lcd_cfg);

@@ -5396,6 +5396,7 @@ static int sensor_g_af_status(struct v4l2_subdev *sd)
     return ret;
 }
 
+#if 0
 static int sensor_g_3a_lock(struct v4l2_subdev *sd)
 {
     int ret = 0;
@@ -5403,6 +5404,7 @@ static int sensor_g_3a_lock(struct v4l2_subdev *sd)
     ret = ((info->auto_focus == 0) ? V4L2_LOCK_FOCUS : ~V4L2_LOCK_FOCUS | (info->autowb == 0) ? V4L2_LOCK_WHITE_BALANCE : ~V4L2_LOCK_WHITE_BALANCE | (~V4L2_LOCK_EXPOSURE));
     return ret;
 }
+#endif
 
 static int sensor_s_init_af(struct v4l2_subdev *sd)
 {

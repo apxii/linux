@@ -66,5 +66,5 @@ int sunxi_drm_rotate_init(void *dev_private);
 
 int sunxi_drm_rotate_ioctl(struct drm_device *dev, void *data,
 				struct drm_file *file_priv);
-int sunxi_drm_rotate_destroy(struct sunxi_rotate_private *rotate_private);
+void sunxi_drm_rotate_destroy(struct sunxi_rotate_private *rotate_private);
 #endif

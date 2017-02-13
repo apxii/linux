@@ -591,22 +591,22 @@ static int ar0330_sensor_vts;
 
 static int sensor_s_exp_gain(struct v4l2_subdev *sd, struct sensor_exp_gain *exp_gain)
 {
-    int exp_val, gain_val,shutter,frame_length;  
-    struct sensor_info *info = to_state(sd);
-    exp_val = exp_gain->exp_val;
-    gain_val = exp_gain->gain_val;
-    if(gain_val<1*16)
-        gain_val=16;
-    if(gain_val>64*16-1)
-        gain_val=64*16-1;
-    if(exp_val>0xfffff)
-        exp_val=0xfffff;
+	int exp_val, gain_val,shutter,frame_length;  
+	struct sensor_info *info = to_state(sd);
+	exp_val = exp_gain->exp_val;
+	gain_val = exp_gain->gain_val;
+	if(gain_val<1*16)
+		gain_val=16;
+	if(gain_val>64*16-1)
+		gain_val=64*16-1;
+	if(exp_val>0xfffff)
+		exp_val=0xfffff;
 
-    shutter = exp_val/16;
-    if(shutter > ar0330_sensor_vts - 4)
-    	frame_length = shutter + 4;
-    else
-    	frame_length = ar0330_sensor_vts;
+	shutter = exp_val/16;
+	if(shutter > ar0330_sensor_vts - 4)
+		frame_length = shutter + 4;
+	else
+		frame_length = ar0330_sensor_vts;
 
 	printk("norm exp_val = %d,gain_val = %d\n",exp_val,gain_val);
 	sensor_write(sd, 0x300A,frame_length);//coarse integration time
@@ -619,7 +619,7 @@ static int sensor_s_exp_gain(struct v4l2_subdev *sd, struct sensor_exp_gain *exp
 static int sensor_s_sw_stby(struct v4l2_subdev *sd, int on_off)
 {
 	int ret ;
-    data_type rdtmp;
+	data_type rdtmp;
 	ret = sensor_read(sd,0x301a,&rdtmp);
 	if (ret!=0)
 		return ret;

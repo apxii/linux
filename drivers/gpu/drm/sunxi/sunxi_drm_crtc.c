@@ -327,11 +327,11 @@ static int sunxi_drm_crtc_mode_set_base(struct drm_crtc *crtc, int x, int y,
 {
 	int ret;
 
-    DRM_DEBUG_KMS("[%d] %p\n",__LINE__, crtc->fb);
+	DRM_DEBUG_KMS("[%d] %p\n",__LINE__, crtc->fb);
 
-    ret = sunxi_crtc_updata_fb(crtc, x, y);
-    if (ret)
-        return ret;
+	ret = sunxi_crtc_updata_fb(crtc, x, y);
+	if (ret)
+		return ret;
 	sunxi_drm_crtc_commit(crtc);
 
 	return 0;

@@ -54,19 +54,19 @@ static s32 axp_device_probe(struct platform_device *pdev)
 
 	if (of_property_read_u32(node, "pmu_runtime_chgcur", &axp_config->pmu_runtime_chgcur))
 		axp_config->pmu_runtime_chgcur = INTCHGCUR / 1000;
-		axp_config->pmu_runtime_chgcur = axp_config->pmu_runtime_chgcur * 1000;
+	axp_config->pmu_runtime_chgcur = axp_config->pmu_runtime_chgcur * 1000;
 
 	if (of_property_read_u32(node, "pmu_suspend_chgcur", &axp_config->pmu_suspend_chgcur))
 		axp_config->pmu_suspend_chgcur = 1200;
-		axp_config->pmu_suspend_chgcur = axp_config->pmu_suspend_chgcur * 1000;
+	axp_config->pmu_suspend_chgcur = axp_config->pmu_suspend_chgcur * 1000;
 
 	if (of_property_read_u32(node, "pmu_shutdown_chgcur", &axp_config->pmu_shutdown_chgcur))
 		axp_config->pmu_shutdown_chgcur = 1200;
-		axp_config->pmu_shutdown_chgcur = axp_config->pmu_shutdown_chgcur *1000;
+	axp_config->pmu_shutdown_chgcur = axp_config->pmu_shutdown_chgcur *1000;
 
 	if (of_property_read_u32(node, "pmu_init_chgvol", &axp_config->pmu_init_chgvol))
 		axp_config->pmu_init_chgvol = INTCHGVOL / 1000;
-		axp_config->pmu_init_chgvol = axp_config->pmu_init_chgvol * 1000;
+	axp_config->pmu_init_chgvol = axp_config->pmu_init_chgvol * 1000;
 
 	if (of_property_read_u32(node, "pmu_init_chgend_rate", &axp_config->pmu_init_chgend_rate))
 		axp_config->pmu_init_chgend_rate = INTCHGENDRATE;

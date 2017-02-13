@@ -80,7 +80,6 @@ MODULE_LICENSE("GPL");
 #endif
 
 static bool single_af = false;
-static unsigned char af_pos_h,af_pos_l;
 
 /*
  * Our nominal (default) frame rate.
@@ -2730,12 +2729,14 @@ static struct regval_list sensor_wb_fluorescent_regs[] = {
 	{0x01A3,0x59},
 };
 
+#if 0
 static struct regval_list sensor_wb_tungsten_regs[] = {
 	{0x01A0,0x03},//MWB
 	{0x01A1,0x05},
 	{0x01A2,0x00},
 	{0x01A3,0x7f},
 };
+#endif
 
 /*
  * The color effect settings
@@ -3278,9 +3279,6 @@ static int sensor_s_single_af(struct v4l2_subdev *sd)
   return 0;
 }
 
-static int sensor_g_autofocus_ctrl(struct v4l2_subdev *sd,
-		struct v4l2_control *ctrl);
-
 static int sensor_s_continueous_af(struct v4l2_subdev *sd)
 {
 	int ret;
@@ -3338,6 +3336,7 @@ static int sensor_s_release_af(struct v4l2_subdev *sd)
 	return 0;
 }
 
+#if 0
 static int sensor_s_af_zone(struct v4l2_subdev *sd, unsigned int xc, unsigned int yc)
 {
 	struct sensor_info *info = to_state(sd);
@@ -3386,7 +3385,7 @@ static int sensor_s_af_zone(struct v4l2_subdev *sd, unsigned int xc, unsigned in
 	mdelay(5);
 	return 0;
 }
-
+#endif
 
 #if 0
 static int sensor_s_relaunch_af_zone(struct v4l2_subdev *sd)
@@ -3916,7 +3915,7 @@ static int sensor_s_autowb(struct v4l2_subdev *sd, int value)
 {
 	int ret;
 	struct sensor_info *info = to_state(sd);
- 	 unsigned char rdval;
+// 	 unsigned char rdval;
 	
 	ret = sensor_write_array(sd, sensor_wb_auto_regs, ARRAY_SIZE(sensor_wb_auto_regs));
 	if (ret < 0) {
@@ -4679,8 +4678,8 @@ static int sensor_s_fmt(struct v4l2_subdev *sd,
 	struct sensor_format_struct *sensor_fmt;
 	struct sensor_win_size *wsize;
 	struct sensor_info *info = to_state(sd);
-	struct regval_list regs;
-        int cnt,retval,pos_l=0,pos_h=0;
+//	struct regval_list regs;
+        unsigned char cnt,retval,pos_l=0,pos_h=0;
 	
 	 vfe_dev_print(" sensor_s_fmt\n");
 	
@@ -4988,7 +4987,7 @@ static int sensor_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 {
   struct v4l2_queryctrl qc;
   int ret;
-  struct v4l2_pix_size *pix;
+//  struct v4l2_pix_size *pix;
   
 //  vfe_dev_dbg("sensor_s_ctrl ctrl->id=0x%8x\n", ctrl->id);
   qc.id = ctrl->id;

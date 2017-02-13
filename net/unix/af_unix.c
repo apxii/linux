@@ -426,8 +426,6 @@ static int unix_dgram_peer_wake_me(struct sock *sk, struct sock *other)
 	return 0;
 }
 
-
-
 static inline int unix_writable(struct sock *sk)
 {
 	return (atomic_read(&sk->sk_wmem_alloc) << 2) <= sk->sk_sndbuf;
@@ -532,6 +530,7 @@ static void unix_release_sock(struct sock *sk, int embrion)
 			skpair->sk_state_change(skpair);
 			sk_wake_async(skpair, SOCK_WAKE_WAITD, POLL_HUP);
 		}
+
 		unix_dgram_peer_wake_disconnect(sk, skpair);
 		sock_put(skpair); /* It may now die */
 		unix_peer(sk) = NULL;
@@ -1135,6 +1134,7 @@ restart:
 		struct sock *old_peer = unix_peer(sk);
 		unix_peer(sk) = other;
 		unix_dgram_peer_wake_disconnect_wakeup(sk, old_peer);
+
 		unix_state_double_unlock(sk, other);
 
 		if (other != old_peer)
@@ -1666,6 +1666,7 @@ restart:
 		err = len;
 		goto out_free;
 	}
+
 	sk_locked = 0;
 	unix_state_lock(other);
 restart_locked:
@@ -1688,6 +1689,7 @@ restart_locked:
 		if (unix_peer(sk) == other) {
 			unix_peer(sk) = NULL;
 			unix_dgram_peer_wake_disconnect_wakeup(sk, other);
+
 			unix_state_unlock(sk);
 
 			unix_dgram_disconnected(sk, other);
@@ -1714,20 +1716,20 @@ restart_locked:
 	}
 
 	if (unlikely(unix_peer(other) != sk && unix_recvq_full(other))) {
- 		if (timeo) {
- 			timeo = unix_wait_for_peer(other, timeo);
+		if (timeo) {
+			timeo = unix_wait_for_peer(other, timeo);
 
- 			err = sock_intr_errno(timeo);
+			err = sock_intr_errno(timeo);
 			if (signal_pending(current))
- 				goto out_free;
+				goto out_free;
 
- 			goto restart;
+			goto restart;
 		}
 
 		if (!sk_locked) {
- 			unix_state_unlock(other);
- 			unix_state_double_lock(sk, other);
- 		}
+			unix_state_unlock(other);
+			unix_state_double_lock(sk, other);
+		}
 
 		if (unix_peer(sk) != other ||
 		    unix_dgram_peer_wake_me(sk, other)) {
@@ -1741,6 +1743,9 @@ restart_locked:
 			goto restart_locked;
 		}
 	}
+	if (unlikely(sk_locked))
+		unix_state_unlock(sk);
+
 	if (unlikely(sk_locked))
 		unix_state_unlock(sk);
 

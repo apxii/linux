@@ -229,10 +229,10 @@ sunxi_drm_connector_detect(struct drm_connector *connector, bool force)
 	if (sunxi_connector->panel->panel_ops->detect)
 		status = sunxi_connector->panel->panel_ops->detect(sunxi_connector->panel);
 
-    DRM_DEBUG_KMS("[%d]  status:%d\n", __LINE__, status);
+	DRM_DEBUG_KMS("[%d]  status:%d\n", __LINE__, status);
 
-    if (status == connector_status_disconnected)
-        sunxi_drm_display_power(connector, DRM_MODE_DPMS_OFF);
+	if (status == connector_status_disconnected)
+		sunxi_drm_display_power(connector, DRM_MODE_DPMS_OFF);
 	return status;
 }
 
@@ -375,8 +375,8 @@ int sunxi_drm_connector_create(struct drm_device *dev, int possible_enc, int fix
 {
 	struct sunxi_drm_connector *sunxi_connector;
 	struct drm_connector *connector;
-    struct drm_encoder	 *encoder;
-    struct sunxi_lcd_private  *sunxi_lcd_p = NULL;
+	struct drm_encoder	 *encoder;
+	struct sunxi_lcd_private  *sunxi_lcd_p = NULL;
 	int type;
 	int err;
 
@@ -390,94 +390,94 @@ int sunxi_drm_connector_create(struct drm_device *dev, int possible_enc, int fix
 
 	connector = &sunxi_connector->drm_connector;
 	switch (disp_out_type) {
-    case DISP_OUTPUT_TYPE_LCD:
-        connector->interlace_allowed = false;
-        connector->polled = 0;
-        sunxi_connector->disp_out_type = DISP_OUTPUT_TYPE_LCD;
-        sunxi_lcd_p = (struct sunxi_lcd_private *)panel->private;
-        switch (sunxi_lcd_p->panel->lcd_if) {
-    	case LCD_IF_HV:
-    		type = DRM_MODE_CONNECTOR_Unknown;
-    		break;
-    	case LCD_IF_CPU:
-    		type = DRM_MODE_CONNECTOR_Unknown;
-    		break;
-        case LCD_IF_LVDS:
-    		type = DRM_MODE_CONNECTOR_LVDS;
-            if (sunxi_encoder_assign_ops(dev, fix_enc, ENCODER_OPS_LVDS, panel->private))
-                goto out;
-            break;
-        case LCD_IF_DSI:
-    		type = DRM_MODE_CONNECTOR_Unknown;
-            if (sunxi_encoder_assign_ops(dev, fix_enc, ENCODER_OPS_DSI, panel->private))
-                goto out;
-    		break;
-        case LCD_IF_EDP:
-    		type = DRM_MODE_CONNECTOR_eDP;
-    		break;
-        case LCD_IF_EXT_DSI:
-    		type = DRM_MODE_CONNECTOR_Unknown;
-    		break;
-        default:
-            DRM_ERROR("give us a err lcd panel type.\n");
-            goto out;
-        }
-        break;
+	case DISP_OUTPUT_TYPE_LCD:
+		connector->interlace_allowed = false;
+		connector->polled = 0;
+		sunxi_connector->disp_out_type = DISP_OUTPUT_TYPE_LCD;
+		sunxi_lcd_p = (struct sunxi_lcd_private *)panel->private;
+		switch (sunxi_lcd_p->panel->lcd_if) {
+		case LCD_IF_HV:
+			type = DRM_MODE_CONNECTOR_Unknown;
+			break;
+		case LCD_IF_CPU:
+			type = DRM_MODE_CONNECTOR_Unknown;
+			break;
+		case LCD_IF_LVDS:
+			type = DRM_MODE_CONNECTOR_LVDS;
+			if (sunxi_encoder_assign_ops(dev, fix_enc, ENCODER_OPS_LVDS, panel->private))
+				goto out;
+			break;
+		case LCD_IF_DSI:
+			type = DRM_MODE_CONNECTOR_Unknown;
+			if (sunxi_encoder_assign_ops(dev, fix_enc, ENCODER_OPS_DSI, panel->private))
+				goto out;
+			break;
+		case LCD_IF_EDP:
+			type = DRM_MODE_CONNECTOR_eDP;
+			break;
+		case LCD_IF_EXT_DSI:
+			type = DRM_MODE_CONNECTOR_Unknown;
+			break;
+		default:
+			DRM_ERROR("give us a err lcd panel type.\n");
+			goto out;
+		}
+		break;
 
-    case DISP_OUTPUT_TYPE_HDMI:
+	case DISP_OUTPUT_TYPE_HDMI:
 		type = DRM_MODE_CONNECTOR_HDMIA;
 		connector->polled = DRM_CONNECTOR_POLL_CONNECT | DRM_CONNECTOR_POLL_DISCONNECT;
-        sunxi_connector->disp_out_type = DISP_OUTPUT_TYPE_HDMI;
-        connector->interlace_allowed = 1;
-        if (sunxi_encoder_assign_ops(dev, fix_enc, ENCODER_OPS_HDMI, panel->private))
-            goto out;
+		sunxi_connector->disp_out_type = DISP_OUTPUT_TYPE_HDMI;
+		connector->interlace_allowed = 1;
+		if (sunxi_encoder_assign_ops(dev, fix_enc, ENCODER_OPS_HDMI, panel->private))
+			goto out;
 		break;
 
-    case DISP_OUTPUT_TYPE_TV:
+	case DISP_OUTPUT_TYPE_TV:
 		type = DRM_MODE_CONNECTOR_TV;
 		connector->polled = 0;
-        sunxi_connector->disp_out_type = DISP_OUTPUT_TYPE_TV;
-        if (sunxi_encoder_assign_ops(dev, fix_enc, ENCODER_OPS_TV, panel->private))
-            goto out;
+		sunxi_connector->disp_out_type = DISP_OUTPUT_TYPE_TV;
+		if (sunxi_encoder_assign_ops(dev, fix_enc, ENCODER_OPS_TV, panel->private))
+			goto out;
 		break;
 
-    case DISP_OUTPUT_TYPE_VGA:
+	case DISP_OUTPUT_TYPE_VGA:
 		type = DRM_MODE_CONNECTOR_VGA;
 		connector->polled = 0;
-        sunxi_connector->disp_out_type = DISP_OUTPUT_TYPE_VGA;
-        if (sunxi_encoder_assign_ops(dev, fix_enc, ENCODER_OPS_VGA, panel->private))
-            goto out;
+		sunxi_connector->disp_out_type = DISP_OUTPUT_TYPE_VGA;
+		if (sunxi_encoder_assign_ops(dev, fix_enc, ENCODER_OPS_VGA, panel->private))
+			goto out;
 		break;
 
 	default:
 		type = DRM_MODE_CONNECTOR_Unknown;
-        DRM_ERROR("give us a err type disp_out_type.\n");
-        goto out;
+		DRM_ERROR("give us a err type disp_out_type.\n");
+		goto out;
 	}
 
-    connector->dpms = DRM_MODE_DPMS_OFF;
-    sunxi_connector->dmps = DRM_MODE_DPMS_OFF;
-    sunxi_connector->panel = panel;
-    sunxi_connector->connector_id = id;
-    panel->drm_connector = &sunxi_connector->drm_connector;
+	connector->dpms = DRM_MODE_DPMS_OFF;
+	sunxi_connector->dmps = DRM_MODE_DPMS_OFF;
+	sunxi_connector->panel = panel;
+	sunxi_connector->connector_id = id;
+	panel->drm_connector = &sunxi_connector->drm_connector;
 
-    sunxi_connector->hw_res = hw_res;
-    if (hw_res != NULL) {
-        hw_res->irq_arg = (void *)sunxi_connector;
-        hw_res->irq_handle = sunxi_connector_vsync_handle;
-        if (hw_res->ops && hw_res->ops->init)
-            hw_res->ops->init(sunxi_connector);
-    }
+	sunxi_connector->hw_res = hw_res;
+	if (hw_res != NULL) {
+		hw_res->irq_arg = (void *)sunxi_connector;
+		hw_res->irq_handle = sunxi_connector_vsync_handle;
+		if (hw_res->ops && hw_res->ops->init)
+			hw_res->ops->init(sunxi_connector);
+	}
 
-    list_for_each_entry(encoder, &dev->mode_config.encoder_list, head) {
-        if (possible_enc & 1) {
-            err = drm_mode_connector_attach_encoder(connector, encoder);
-	        if (err) {
-		        DRM_ERROR("failed to attach a connector to a encoder\n");
-	        }
-        }
-        possible_enc >>= 1; 
-    }
+	list_for_each_entry(encoder, &dev->mode_config.encoder_list, head) {
+		if (possible_enc & 1) {
+			err = drm_mode_connector_attach_encoder(connector, encoder);
+			if (err) {
+				DRM_ERROR("failed to attach a connector to a encoder\n");
+			}
+		}
+		possible_enc >>= 1; 
+	}
 
 	drm_connector_init(dev, connector, &sunxi_connector_funcs, type);
 	drm_connector_helper_add(connector, &sunxi_connector_helper_funcs);
@@ -485,8 +485,8 @@ int sunxi_drm_connector_create(struct drm_device *dev, int possible_enc, int fix
 	if (err)
 		goto err_connector;
 
-    DRM_INFO("[%d]sunxi_con_id:%d(%d), fix:%d\n", __LINE__,
-        sunxi_connector->connector_id, connector->base.id,  fix_enc);
+	DRM_INFO("[%d]sunxi_con_id:%d(%d), fix:%d\n", __LINE__,
+		sunxi_connector->connector_id, connector->base.id,  fix_enc);
 
 	return 0;
 

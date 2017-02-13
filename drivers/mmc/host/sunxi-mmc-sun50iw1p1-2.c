@@ -839,11 +839,13 @@ extern void mmc_set_timing(struct mmc_host *host, unsigned int timing);
 extern void mmc_set_bus_width(struct mmc_host *host, unsigned int width);
 void sunxi_mmc_do_shutdown2(struct platform_device * pdev)
 {
-	u32 ocr = 0;
 	u32 err = 0;
 	struct mmc_host *mmc = NULL;
 	struct sunxi_mmc_host *host = NULL;
+#if 0
 	u32 status = 0;
+	u32 ocr = 0;
+#endif
 
 	mmc = platform_get_drvdata(pdev);
 	if (mmc == NULL) {
@@ -920,7 +922,8 @@ int mmc_deselect_cards(struct mmc_host *host);
 void mmc_power_off(struct mmc_host *host);
 int mmc_card_sleepawake(struct mmc_host *host, int sleep);
 
-
+#if 0
+/* Unused */
 static int sunxi_mmc_can_poweroff_notify(const struct mmc_card *card)
 {
 	return card &&
@@ -966,7 +969,6 @@ static int sunxi_mmc_sleep(struct mmc_host *host)
 
 	return err;
 }
-
 
 
 static int sunxi_mmc_suspend(struct mmc_host *host, bool is_suspend)
@@ -1030,7 +1032,7 @@ void sunxi_mmc_do_shutdown2(struct platform_device * pdev)
 	}
 }
 */
-
+#endif
 
 #endif
 

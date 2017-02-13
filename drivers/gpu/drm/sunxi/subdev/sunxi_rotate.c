@@ -88,7 +88,7 @@ int sunxi_drm_rotate_init(void *dev_private)
     return 0;
 }
 
-int sunxi_drm_rotate_destroy(struct sunxi_rotate_private *rotate_private)
+void sunxi_drm_rotate_destroy(struct sunxi_rotate_private *rotate_private)
 {
     mutex_lock(&rotate_private->user_mlock);
     if(rotate_private->irq != 0)
@@ -252,7 +252,7 @@ static bool sunxi_check_rotate_info_ok(struct drm_device *dev,
     sunxi_sync_buf(gem_buf);
     tr_info->src_frame.laddr[0] = gem_buf->dma_addr;
     tr_info->src_frame.haddr[0] = (gem_buf->dma_addr>>32);
-    DRM_DEBUG_KMS("from addr:  %x%x  size%u\n", tr_info->src_frame.haddr[0],tr_info->src_frame.laddr[0],gem_buf->size);
+    DRM_DEBUG_KMS("from addr:  %x%x  size%lu\n", tr_info->src_frame.haddr[0],tr_info->src_frame.laddr[0],gem_buf->size);
     DRM_DEBUG_KMS("to   addr:  %x%x\n", tr_info->dst_frame.haddr[0],tr_info->dst_frame.laddr[0]);
 
     if((rotate_info->pitch * 8)/rotate_info->bpp%16) {

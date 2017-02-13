@@ -442,8 +442,8 @@ static void auto_ce_model(unsigned int width, unsigned height, unsigned int sumc
 		total_pixel -= hist[i];
 	}
 
-  if (total_size>3*total_pixel) //less than 66% pixel in valid range
-    total_size=0;
+	if (total_size>3*total_pixel) //less than 66% pixel in valid range
+		total_size=0;
 
 	total_pixel_r = 0;
 
@@ -459,7 +459,7 @@ static void auto_ce_model(unsigned int width, unsigned height, unsigned int sumc
 	}
 	else
 	{
-	  int black_thr;
+		int black_thr;
 
 		uthr = mean + mean * up_precent_thr / 100;
 		lthr = mean - mean * down_precent_thr / 100;
@@ -467,14 +467,14 @@ static void auto_ce_model(unsigned int width, unsigned height, unsigned int sumc
 		black_thr= lthr;
 		white_str_lv= lthr*1/3;
 
-	    if (p_hist_data->hist_mean>96)
-	        black_str_lv=black_thr;
-	    else if (p_hist_data->hist_mean>64)
-	        black_str_lv=black_thr*2/3;
-	    else if (p_hist_data->hist_mean<21)
-	        black_str_lv=black_thr*1/3;
-	    else
-	        black_str_lv=black_thr*1/3+ (p_hist_data->hist_mean*black_thr/(64*3));
+		if (p_hist_data->hist_mean>96)
+			black_str_lv=black_thr;
+		else if (p_hist_data->hist_mean>64)
+			black_str_lv=black_thr*2/3;
+		else if (p_hist_data->hist_mean<21)
+			black_str_lv=black_thr*1/3;
+		else
+			black_str_lv=black_thr*1/3+ (p_hist_data->hist_mean*black_thr/(64*3));
 
 		//generate p
 		if (hist[lowest_black]>mean)
@@ -487,9 +487,9 @@ static void auto_ce_model(unsigned int width, unsigned height, unsigned int sumc
 		total_pixel_r = hist_r[lowest_black];
 		p[lowest_black] = hist_r[lowest_black];
 
-	    //black zone
-	    for (i=lowest_black+1; i<p_hist_data->black_thr0; i++)
-	    {
+		//black zone
+		for (i=lowest_black+1; i<p_hist_data->black_thr0; i++)
+		{
 			if (hist[i]>mean)
 				hist_r[i] = mean;
 			else if (hist[i]>black_str_lv)
@@ -499,20 +499,20 @@ static void auto_ce_model(unsigned int width, unsigned height, unsigned int sumc
 
 			total_pixel_r = total_pixel_r + hist_r[i];
 			p[i] = p[i-1] + hist_r[i];
-	    }
+		}
 
-	    for (i=p_hist_data->black_thr0; i<p_hist_data->black_thr1; i++)
-	    {
-	    	if (hist[i]>mean)
-	    		hist_r[i] = mean;
-	    	else if (hist[i]>lthr)
-	    		hist_r[i] = hist[i];
-	    	else
-	        	hist_r[i] = lthr;//hist[i];
+		for (i=p_hist_data->black_thr0; i<p_hist_data->black_thr1; i++)
+		{
+			if (hist[i]>mean)
+				hist_r[i] = mean;
+			else if (hist[i]>lthr)
+				hist_r[i] = hist[i];
+			else
+				hist_r[i] = lthr;//hist[i];
 
 			total_pixel_r = total_pixel_r + hist_r[i];
 			p[i] = p[i-1] + hist_r[i];
-	    }
+		}
 
 		if (p_hist_data->white_thr0 >= 256)
 			panic("p_hist_data->white_thr0(%d) >= 256", p_hist_data->white_thr0);
@@ -529,9 +529,9 @@ static void auto_ce_model(unsigned int width, unsigned height, unsigned int sumc
 			p[i] = p[i-1] + hist_r[i];
 		}
 
-	    //white zone
-	    for (i=p_hist_data->white_thr0; i<p_hist_data->white_thr1; i++)
-	    {
+		//white zone
+		for (i=p_hist_data->white_thr0; i<p_hist_data->white_thr1; i++)
+		{
 			if (hist[i]>uthr)
 				hist_r[i] = uthr;
 			else if (hist[i]>white_str_lv)//lthr)
@@ -541,9 +541,9 @@ static void auto_ce_model(unsigned int width, unsigned height, unsigned int sumc
 
 			total_pixel_r = total_pixel_r + hist_r[i];
 			p[i] = p[i-1] + hist_r[i];
-	    }
-	    for (i=p_hist_data->white_thr1; i<highest_white; i++)
-	    {
+		}
+		for (i=p_hist_data->white_thr1; i<highest_white; i++)
+		{
 			if (hist[i]>uthr)
 				hist_r[i] = uthr;
 			else if (hist[i]>white_str_lv)
@@ -553,46 +553,46 @@ static void auto_ce_model(unsigned int width, unsigned height, unsigned int sumc
 
 			total_pixel_r = total_pixel_r + hist_r[i];
 			p[i] = p[i-1] + hist_r[i];
-	    }
+		}
 		if (total_pixel_r != 0)
 		{
-		  rate = (total_pixel*(highest_white-lowest_black))/total_pixel_r;
-		  half = rate>>1;
+			rate = (total_pixel*(highest_white-lowest_black))/total_pixel_r;
+			half = rate>>1;
 		}
 		else
 		{
-		  pr_warn("auto_ce_model : total_pixel_r == 0.\n");
-		  rate = highest_white-lowest_black;
-		  half = rate>>1;
+			pr_warn("auto_ce_model : total_pixel_r == 0.\n");
+			rate = highest_white-lowest_black;
+			half = rate>>1;
 		}
-    tmp=toupdate(p_hist_data->hist_mean, p_hist_data->hist_mean_diff, p_hist_data->diff_coeff, change_thr);
-
-    if (tmp)
+		tmp=toupdate(p_hist_data->hist_mean, p_hist_data->hist_mean_diff, p_hist_data->diff_coeff, change_thr);
+		
+		if (tmp)
 		{
 			for (i=lowest_black; i<highest_white; i++)
-		  	{
-		  		tmp = (p[i] * rate + half)/total_pixel + lowest_black;
-		  		if (tmp>=highest_white)
-		  			tmp=highest_white-1;
+			{
+				tmp = (p[i] * rate + half)/total_pixel + lowest_black;
+				if (tmp>=highest_white)
+					tmp=highest_white-1;
 
-		  		celut[i]=(unsigned char)tmp;
+				celut[i]=(unsigned char)tmp;
 
-//		  		if (i>0 && (celut[i]<celut[i-1]))
-//		  		{
-//		  			printk("error fce lut celut[%d]<celut[%d]\n", celut[i], celut[i-1]);
-//		  		}
-		  	}
+//				if (i>0 && (celut[i]<celut[i-1]))
+//				{
+//					printk("error fce lut celut[%d]<celut[%d]\n", celut[i], celut[i-1]);
+//				}
+			}
 
-		  	for (i=0;i<lowest_black;i++)
-		  	{
-		  		celut[i] = i;
-		  	}
-		  	for (i=highest_white;i<256;i++)
-		  	{
-		  		celut[i] = i;
-		  	}
+			for (i=0;i<lowest_black;i++)
+			{
+				celut[i] = i;
+			}
+			for (i=highest_white;i<256;i++)
+			{
+				celut[i] = i;
+			}
 
-	  	}
+		}
 	}
 	return ;
 }
@@ -648,21 +648,21 @@ static void auto_bws_model(unsigned int width, unsigned int height, unsigned int
 	int i=0;
 
 	int	coeff, diff_hist = 0;
-		total = 0;
-		for (k=0; k<256; k++)
-		{
-			diff_hist += abs(hist[k] - hist_pre[k]);
-			total += hist[k];
-		}
-		if (total == 0) {
-			if (diff_hist==0)
-				coeff = 0;
-			else
-				coeff = 200;
-		}
+	total = 0;
+	for (k=0; k<256; k++)
+	{
+		diff_hist += abs(hist[k] - hist_pre[k]);
+		total += hist[k];
+	}
+	if (total == 0) {
+		if (diff_hist==0)
+			coeff = 0;
 		else
-			coeff = (100 * diff_hist) / total;
-		p_hist_data->diff_coeff=coeff;
+			coeff = 200;
+	}
+	else
+		coeff = (100 * diff_hist) / total;
+	p_hist_data->diff_coeff=coeff;
 
 //	total = 0;
 //	for (k=0; k<256; k++)
@@ -676,16 +676,16 @@ static void auto_bws_model(unsigned int width, unsigned int height, unsigned int
 	for (k=0;k<lowest_black;k++)
 	{
 		if (validsum<hist[k]*k)
-		  break;
+			break;
 		else
-		  validsum -= hist[k]*k;
+			validsum -= hist[k]*k;
 	}
 	for (k=255;k>highest_white-1;k--)
 	{
 		if (validsum<hist[k]*k)
-		  break;
+			break;
 		else
-		  validsum -= hist[k]*k;
+			validsum -= hist[k]*k;
 	}
 
 	validcnt = total;
@@ -695,17 +695,17 @@ static void auto_bws_model(unsigned int width, unsigned int height, unsigned int
 	}
 
 	if (validcnt==0)
-	  	mean=lowest_black;
+		mean=lowest_black;
 	else
 	{
 		for (k=255;k>highest_white-1;k--)
-	  	{
-	  		validcnt -= hist[k];
-	  	}
-	  	if (validcnt==0)
-	  		mean=highest_white;
-	    else
-	    	mean = validsum / validcnt;
+		{
+			validcnt -= hist[k];
+		}
+		if (validcnt==0)
+			mean=highest_white;
+		else
+			mean = validsum / validcnt;
 	}
 
 	if (validcnt != 0)
@@ -735,13 +735,13 @@ static void auto_bws_model(unsigned int width, unsigned int height, unsigned int
 
 		//printk("p_hist_data->hist_mean=%d blk0/1=%d/%d\n", p_hist_data->hist_mean, p_hist_data->black_thr0, p_hist_data->black_thr1);
 
-	    //bright
-	    if (p_hist_data->hist_mean<=16)
-	    {
+		//bright
+		if (p_hist_data->hist_mean<=16)
+		{
 			slope_black_lmt=slope_black_lmt;
-	    }
-	    else
-	    {
+		}
+		else
+		{
 			int step=slope_black_lmt-256;
 			if (step<0)
 				step=0;
@@ -750,7 +750,7 @@ static void auto_bws_model(unsigned int width, unsigned int height, unsigned int
 
 			if (slope_black_lmt<256)
 				slope_black_lmt=256;
-	    }
+		}
 
 
 		//4.limit black and white don't cross mean
@@ -779,17 +779,15 @@ static void auto_bws_model(unsigned int width, unsigned int height, unsigned int
 		}
 		else
 		{
-		  pd_s0 = 0;
-		  pd_ymin_fix = -((pd_black<<8) - 128 ) / pd_s1 + pd_black;
+			pd_s0 = 0;
+			pd_ymin_fix = -((pd_black<<8) - 128 ) / pd_s1 + pd_black;
 		}
 
 		if (pd_s0==0)
-			  pd_s1 = 256*pd_black/(pd_black-pd_ymin_fix);
+			pd_s1 = 256*pd_black/(pd_black-pd_ymin_fix);
 
-
-
-    	if (pd_s1==256)
-      		pd_s0=256;
+		if (pd_s1==256)
+			pd_s0=256;
 
 		tmp =  pd_white + ((pd_s2 * (pd_ymax - pd_white)		)>>8);
 		if (		(tmp < 255)	&& (pd_ymax > pd_white)  && (pd_ymax < 255))
@@ -808,8 +806,8 @@ static void auto_bws_model(unsigned int width, unsigned int height, unsigned int
 			pd_ymax_fix = (((255-pd_white)<<8) - 128) / pd_s2 + pd_white;
 		}
 
-	    if (pd_s3==256)
-	      	pd_s2=256;
+		if (pd_s3==256)
+			pd_s2=256;
 	}
 	else	//no enough pixel for auto bws
 	{

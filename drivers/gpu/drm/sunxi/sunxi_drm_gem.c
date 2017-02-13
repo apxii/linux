@@ -235,25 +235,25 @@ int sunxi_drm_gem_dumb_create(struct drm_file *file_priv,
 	struct drm_gem_object *gem_obj;
 	int ret;
 
-    DRM_DEBUG_KMS("[%d]\n", __LINE__);
+	DRM_DEBUG_KMS("[%d]\n", __LINE__);
 
-    gem_obj = sunxi_drm_gem_creat(dev, args);
-    if (NULL == gem_obj)
-        return -ENOMEM;
+	gem_obj = sunxi_drm_gem_creat(dev, args);
+	if (NULL == gem_obj)
+		return -ENOMEM;
 
 	ret = drm_gem_handle_create(file_priv, gem_obj,
 			&args->handle);
-    /* refcount = 2, so unreference;
-     * refcount = 1, handle_count = 1
-     */
-    drm_gem_object_unreference_unlocked(gem_obj); 
+	/* refcount = 2, so unreference;
+	 * refcount = 1, handle_count = 1
+	 */
+	drm_gem_object_unreference_unlocked(gem_obj); 
 	if (ret) {
 		sunxi_drm_gem_destroy(gem_obj);
 		return ret;
 	}
-    DRM_DEBUG_KMS("obj:%p handle:%u [%d  %d  %d] bpp:%d.\n"
-        ,gem_obj,args->handle, args->width, args->height,
-        args->pitch, args->bpp);
+	DRM_DEBUG_KMS("obj:%p handle:%u [%d  %d  %d] bpp:%d.\n"
+		,gem_obj,args->handle, args->width, args->height,
+		args->pitch, args->bpp);
 	return 0;
 }
 

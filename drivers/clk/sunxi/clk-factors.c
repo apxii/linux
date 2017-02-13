@@ -166,7 +166,7 @@ static int sunxi_clk_fators_enable(struct clk_hw *hw)
 	if(factor->lock)
 		spin_unlock_irqrestore(factor->lock, flags);
 
-		return 0;
+	return 0;
 }
 
 static void sunxi_clk_fators_disable(struct clk_hw *hw)
