@@ -202,6 +202,11 @@ struct drm_gem_object *sunxi_drm_gem_creat(struct drm_device *dev,
     struct sunxi_drm_gem_buf *sunxi_buf;
     DRM_DEBUG_KMS("[%d]\n", __LINE__);
 
+	/* HACK! Delete me!
+	 * Always use contigous memory
+	 */
+    args->flags |= SUNXI_BO_CONTIG | SUNXI_BO_CACHABLE;
+
     sunxi_buf = sunxi_buf_create(args);
     if (sunxi_buf == NULL) {
         DRM_ERROR("failed to delete sunxi_drm_gem_buf.\n");
