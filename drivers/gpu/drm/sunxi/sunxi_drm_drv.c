@@ -37,7 +37,7 @@ static struct platform_device *sunxi_drm_pdev;
 static int sunxi_drm_load(struct drm_device *dev, unsigned long flags)
 {
 	struct sunxi_drm_private *private;
-	int ret;
+	int ret = -ENODEV;
 
 	DRM_DEBUG_DRIVER("[%d]\n", __LINE__);
 
@@ -56,13 +56,13 @@ static int sunxi_drm_load(struct drm_device *dev, unsigned long flags)
 
 	sunxi_drm_mode_config_init(dev);
 
-    if(sunxi_drm_init(dev)) {
-        DRM_ERROR("failed to initialize sunxi drm dev.\n");
+	if(sunxi_drm_init(dev)) {
+		DRM_ERROR("failed to initialize sunxi drm dev.\n");
 		goto err_init_sunxi;
-    }
+	}
 	ret = drm_vblank_init(dev, dev->mode_config.num_crtc);
 	if (ret) {
-        DRM_ERROR("failed to init vblank.\n");   
+		DRM_ERROR("failed to init vblank.\n");   
 		goto err_init_sunxi;
 	}
 	/*
@@ -77,12 +77,12 @@ static int sunxi_drm_load(struct drm_device *dev, unsigned long flags)
 
 	drm_vblank_offdelay = VBLANK_OFF_DELAY;
 
-	return 0;
+	return ret;
 
 err_vblank:
 	drm_vblank_cleanup(dev);
 err_init_sunxi:
-    sunxi_drm_destroy(dev);
+	sunxi_drm_destroy(dev);
 	kfree(private);
 
 	return ret;

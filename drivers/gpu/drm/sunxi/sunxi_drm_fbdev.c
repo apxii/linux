@@ -215,21 +215,20 @@ int sunxi_fb_probe(struct drm_fb_helper *helper,
 	struct fb_info *fbi;
 	struct drm_mode_fb_cmd2 mode_cmd = { 0 };
 	struct platform_device *pdev = dev->platformdev;
-    struct drm_mode_create_dumb dump_args = { 0 };
-	int ret;
+	struct drm_mode_create_dumb dump_args = { 0 };
+	int ret = -ENODEV;
 
-
-    sizes->surface_depth = 32;
+	sizes->surface_depth = 32;
 	mode_cmd.width = sizes->fb_width;
 	mode_cmd.height = sizes->fb_height * FBDEV_BUF_NUM;//double buffers? or more?
 	mode_cmd.pitches[0] = sizes->fb_width * (sizes->surface_bpp >> 3);//with GPU
 	mode_cmd.pixel_format = drm_mode_legacy_fb_format(sizes->surface_bpp,
 							  sizes->surface_depth);
 
-    dump_args.height = mode_cmd.height;
-    dump_args.width = mode_cmd.width;
-    dump_args.bpp = sizes->surface_bpp;
-    dump_args.flags = SUNXI_BO_CONTIG |SUNXI_BO_CACHABLE;
+	dump_args.height = mode_cmd.height;
+	dump_args.width = mode_cmd.width;
+	dump_args.bpp = sizes->surface_bpp;
+	dump_args.flags = SUNXI_BO_CONTIG |SUNXI_BO_CACHABLE;
 	DRM_INFO("surface(%d x %d), fb(%d x %d) and bpp(%d) form(%d)\n",
 			sizes->surface_width, sizes->surface_height,
 			sizes->fb_width, sizes->fb_height,
