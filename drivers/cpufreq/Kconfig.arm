@@ -5,6 +5,7 @@
 config ARM_SUNXI_CPUFREQ
 	bool "SUNXI CPUFreq driver support"
 	depends on ARCH_SUN50I || ARCH_SUN8IW10
+	select CPU_FREQ_TABLE
 	help
 	  This adds the CPUFreq driver for the Allwinner SUNXI SoC.
 
