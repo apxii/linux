@@ -55,7 +55,6 @@
 #define DRIVER_AUTHOR	"SoftWinner USB Developer"
 
 static const char	gadget_name[] = "sunxi_usb_udc";
-static const char	driver_desc[] = DRIVER_DESC;
 
 static u64 sunxi_udc_mask = DMA_BIT_MASK(32);
 
@@ -1396,7 +1395,7 @@ void sunxi_udc_dma_completion(struct sunxi_udc *dev, struct sunxi_udc_ep *ep, st
 
 	if ((ep->bEndpointAddress) & USB_DIR_IN) {  //tx, dma_mode1
 		while(USBC_Dev_IsWriteDataReady_FifoEmpty(dev->sunxi_udc_io->usb_bsp_hdle, USBC_EP_TYPE_TX));
-			USBC_Dev_ClearEpDma(dev->sunxi_udc_io->usb_bsp_hdle, USBC_EP_TYPE_TX);
+		USBC_Dev_ClearEpDma(dev->sunxi_udc_io->usb_bsp_hdle, USBC_EP_TYPE_TX);
 	} else {  //rx, dma_mode0
 		USBC_Dev_ClearEpDma(dev->sunxi_udc_io->usb_bsp_hdle, USBC_EP_TYPE_RX);
 	}
@@ -1451,7 +1450,7 @@ void sunxi_udc_dma_completion(struct sunxi_udc *dev, struct sunxi_udc_ep *ep, st
 			if((ep->bEndpointAddress & USB_DIR_IN) != 0) {
 
 				while(USBC_Dev_IsWriteDataReady_FifoEmpty(dev->sunxi_udc_io->usb_bsp_hdle, USBC_EP_TYPE_TX));
-					sunxi_udc_write_fifo(ep, req_next);
+				sunxi_udc_write_fifo(ep, req_next);
 			}else if(((ep->bEndpointAddress & USB_DIR_IN) == 0)
 				&& USBC_Dev_IsReadDataReady(dev->sunxi_udc_io->usb_bsp_hdle, USBC_EP_TYPE_RX)){
 
