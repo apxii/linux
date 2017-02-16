@@ -305,6 +305,7 @@ static int sunxi_combine_get_temp(void *data, long *temperature)
 			}
 			break;
 		default:
+			taget = 0;
 			break;
 		}
 		*temperature = taget;
