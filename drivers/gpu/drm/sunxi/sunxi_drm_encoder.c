@@ -541,10 +541,10 @@ bool sunxi_tcon_common_query_irq(void *irq_data, int need_irq)
         default :
             return false;
         }
+        if(tcon_irq_query(sunxi_encoder->enc_id, id))
+	    return true;
     }
 
-    if(tcon_irq_query(sunxi_encoder->enc_id, id))
-        return true;
     return false;
 }
 
