@@ -485,7 +485,7 @@ static const struct of_device_id sunxi_i2s_of_match[] = {
 	{ .compatible = "allwinner,sunxi-internal-i2s", },
 	{},
 };
-static int __init sunxi_internal_i2s_platform_probe(struct platform_device *pdev)
+static int sunxi_internal_i2s_platform_probe(struct platform_device *pdev)
 {
 	s32 ret = 0;
 	const struct of_device_id *device;

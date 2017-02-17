@@ -702,7 +702,7 @@ static const struct of_device_id sunxi_spdif_of_match[] = {
 	{},
 };
 
-static int __init sunxi_spdif_dev_probe(struct platform_device *pdev)
+static int sunxi_spdif_dev_probe(struct platform_device *pdev)
 {
 	u32 ret = 0,reg_val = 0;
 	struct resource res;
@@ -815,7 +815,7 @@ err0:
 	return ret;
 }
 
-static int __exit sunxi_spdif_dev_remove(struct platform_device *pdev)
+static int sunxi_spdif_dev_remove(struct platform_device *pdev)
 {
 	snd_soc_unregister_component(&pdev->dev);
 	platform_set_drvdata(pdev, NULL);
@@ -824,7 +824,7 @@ static int __exit sunxi_spdif_dev_remove(struct platform_device *pdev)
 
 static struct platform_driver sunxi_spdif_driver = {
 	.probe = sunxi_spdif_dev_probe,
-	.remove = __exit_p(sunxi_spdif_dev_remove),
+	.remove = sunxi_spdif_dev_remove,
 	.driver = {
 		.name = DRV_NAME,
 		.owner = THIS_MODULE,

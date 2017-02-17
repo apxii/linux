@@ -880,7 +880,7 @@ static const struct of_device_id sunxi_codec_of_match[] = {
 	{},
 };
 
-static int __init sunxi_internal_codec_probe(struct platform_device *pdev)
+static int sunxi_internal_codec_probe(struct platform_device *pdev)
 {
 	s32 ret = 0;
 	u32 temp_val = 0;
@@ -1056,7 +1056,7 @@ err0:
 	return ret;
 }
 
-static int __exit sunxi_internal_codec_remove(struct platform_device *pdev)
+static int sunxi_internal_codec_remove(struct platform_device *pdev)
 {
 	sysfs_remove_group(&pdev->dev.kobj, &audio_debug_attr_group);
 	snd_soc_unregister_codec(&pdev->dev);
@@ -1080,7 +1080,7 @@ static struct platform_driver sunxi_internal_codec_driver = {
 		.of_match_table = sunxi_codec_of_match,
 	},
 	.probe = sunxi_internal_codec_probe,
-	.remove = __exit_p(sunxi_internal_codec_remove),
+	.remove = sunxi_internal_codec_remove,
 	.shutdown = sunxi_internal_codec_shutdown,
 };
 

@@ -214,7 +214,7 @@ static const struct snd_soc_component_driver sunxi_hdmi_component = {
 	.name		= DRV_NAME,
 };
 
-static int __init sunxi_hdmi_dev_probe(struct platform_device *pdev)
+static int sunxi_hdmi_dev_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	struct device_node *node = pdev->dev.of_node;
@@ -303,7 +303,7 @@ err0:
 	return 0;
 }
 
-static int __exit sunxi_hdmi_dev_remove(struct platform_device *pdev)
+static int sunxi_hdmi_dev_remove(struct platform_device *pdev)
 {
 	snd_soc_unregister_component(&pdev->dev);
 	platform_set_drvdata(pdev, NULL);
@@ -313,7 +313,7 @@ static int __exit sunxi_hdmi_dev_remove(struct platform_device *pdev)
 /*method relating*/
 static struct platform_driver sunxi_hdmi_driver = {
 	.probe = sunxi_hdmi_dev_probe,
-	.remove = __exit_p(sunxi_hdmi_dev_remove),
+	.remove = sunxi_hdmi_dev_remove,
 	.driver = {
 		.name 	= DRV_NAME,
 		.owner = THIS_MODULE,

@@ -209,7 +209,7 @@ static const struct of_device_id sunxi_daudio_of_match[] = {
 static const struct snd_soc_component_driver sunxi_daudio_component = {
 	.name		= DRV_NAME,
 };
-static int __init sunxi_daudio_platform_probe(struct platform_device *pdev)
+static int sunxi_daudio_platform_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	struct resource res;

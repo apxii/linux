@@ -332,7 +332,7 @@ static struct snd_soc_codec_driver soc_codec_dev_sndhdmi = {
 	.resume 	= sunxi_sndhdmi_resume,
 };
 
-static int __init sndhdmi_codec_probe(struct platform_device *pdev)
+static int sndhdmi_codec_probe(struct platform_device *pdev)
 {
 	if (!pdev) {
 		pr_err("error:%s,line:%d\n", __func__, __LINE__);
@@ -344,7 +344,7 @@ static int __init sndhdmi_codec_probe(struct platform_device *pdev)
 	return snd_soc_register_codec(&pdev->dev, &soc_codec_dev_sndhdmi, &sndhdmi_dai, 1);
 }
 
-static int __exit sndhdmi_codec_remove(struct platform_device *pdev)
+static int sndhdmi_codec_remove(struct platform_device *pdev)
 {
 	if (!pdev) {
 		pr_err("error:%s,line:%d\n", __func__, __LINE__);
@@ -364,7 +364,7 @@ static struct platform_driver sndhdmi_codec_driver = {
 		.owner 	= THIS_MODULE,
 	},
 	.probe 	= sndhdmi_codec_probe,
-	.remove = __exit_p(sndhdmi_codec_remove),
+	.remove = sndhdmi_codec_remove,
 };
 
 static int __init sndhdmi_codec_init(void)

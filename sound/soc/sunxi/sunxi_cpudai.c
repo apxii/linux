@@ -94,7 +94,7 @@ static const struct of_device_id sunxi_cpudai_of_match[] = {
 	{},
 };
 
-static int __init sunxi_internal_cpudai_platform_probe(struct platform_device *pdev)
+static int sunxi_internal_cpudai_platform_probe(struct platform_device *pdev)
 {
 	s32 ret = 0;
 	const struct of_device_id *device;
