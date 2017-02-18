@@ -11,7 +11,7 @@ endif
 ifneq ($(CONFIG_SND_SOC_HUB),)
 snd-sunxi-soc-objs += sunxi_hub.o
 endif
-obj-y += snd-sunxi-soc.o
+obj-$(CONFIG_SND_SUNXI_SOC) += snd-sunxi-soc.o
 
 #audiocodec
 #sun50i
