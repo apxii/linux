@@ -436,7 +436,7 @@ static const struct of_device_id odroid_max98090_of_match[] = {
 	{ .compatible = "hardkernel,odroid-max98090", },
 	{},
 };
-MODULE_DEVICE_TABLE(of, samsung_max98090_of_match);
+MODULE_DEVICE_TABLE(of, odroid_max98090_of_match);
 #endif /* CONFIG_OF */
 
 static struct platform_driver odroid_audio_driver = {
