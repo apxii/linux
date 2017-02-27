@@ -146,7 +146,7 @@ s32 vdec_init(enum vformat_e vf, int is_4k)
 	int retry_num = 0;
 
 	if (inited_vcodec_num >= SUPPORT_VCODEC_NUM) {
-		pr_info("We only support the one video code at each time\n");
+		pr_err("We only support the one video code at each time\n");
 		return -EIO;
 	}
 	if (vf == VFORMAT_H264_4K2K ||
@@ -155,7 +155,7 @@ s32 vdec_init(enum vformat_e vf, int is_4k)
 	}
 	inited_vcodec_num++;
 
-	pr_info("vdec_dev_reg.mem[0x%lx -- 0x%lx]\n",
+	pr_debug("vdec_dev_reg.mem[0x%lx -- 0x%lx]\n",
 		vdec_dev_reg.mem_start,
 		vdec_dev_reg.mem_end);
 
@@ -174,7 +174,8 @@ s32 vdec_init(enum vformat_e vf, int is_4k)
 		}
 		vdec_dev_reg.mem_start = codec_mm_alloc_for_dma(MEM_NAME,
 			alloc_size / PAGE_SIZE, 4 + PAGE_SHIFT,
-			CODEC_MM_FLAGS_CMA_CLEAR);
+			CODEC_MM_FLAGS_CMA_CLEAR |
+			CODEC_MM_FLAGS_FOR_VDECODER);
 		if (!vdec_dev_reg.mem_start) {
 			if (retry_num < 1) {
 				pr_err("vdec base CMA allocation failed,try again\\n");
@@ -186,7 +187,7 @@ s32 vdec_init(enum vformat_e vf, int is_4k)
 			inited_vcodec_num--;
 			return -ENOMEM;
 		}
-		pr_info("vdec base memory alloced %p\n",
+		pr_debug("vdec base memory alloced %p\n",
 		(void *)vdec_dev_reg.mem_start);
 
 		vdec_dev_reg.mem_end = vdec_dev_reg.mem_start +
@@ -204,7 +205,7 @@ s32 vdec_init(enum vformat_e vf, int is_4k)
 
 	if (IS_ERR(vdec_device)) {
 		r = PTR_ERR(vdec_device);
-		pr_info("vdec: Decoder device register failed (%d)\n", r);
+		pr_err("vdec: Decoder device register failed (%d)\n", r);
 		inited_vcodec_num--;
 		goto error;
 	}
@@ -649,52 +650,70 @@ bool vdec_on(enum vdec_type_e core)
 }
 #endif
 
-void vdec_source_changed(int format, int width, int height, int fps)
+int vdec_source_changed(int format, int width, int height, int fps)
 {
 	/* todo: add level routines for clock adjustment per chips */
-
+	int ret = -1;
+	static int on_setting;
+	if (on_setting > 0)
+		return ret;/*on changing clk,ignore this change*/
 
 	if (vdec_source_get(VDEC_1) == width * height * fps)
-		return;
+		return ret;
 
 
-
-	vdec_source_changed_for_clk_set(format, width, height, fps);
+	on_setting = 1;
+	ret = vdec_source_changed_for_clk_set(format, width, height, fps);
 	pr_info("vdec1 video changed to %d x %d %d fps clk->%dMHZ\n",
 			width, height, fps, vdec_clk_get(VDEC_1));
+	on_setting = 0;
+	return ret;
 
 }
 
-void vdec2_source_changed(int format, int width, int height, int fps)
+int vdec2_source_changed(int format, int width, int height, int fps)
 {
+	int ret = -1;
+	static int on_setting;
+
 	if (has_vdec2()) {
 		/* todo: add level routines for clock adjustment per chips */
-
+		if (on_setting != 0)
+			return ret;/*on changing clk,ignore this change*/
 
 		if (vdec_source_get(VDEC_2) == width * height * fps)
-			return;
+			return ret;
 
-
-
-		vdec_source_changed_for_clk_set(format, width, height, fps);
+		on_setting = 1;
+		ret = vdec_source_changed_for_clk_set(format,
+					width, height, fps);
 		pr_info("vdec2 video changed to %d x %d %d fps clk->%dMHZ\n",
 			width, height, fps, vdec_clk_get(VDEC_2));
+		on_setting = 0;
+		return ret;
 	}
+	return 0;
 }
 
-void hevc_source_changed(int format, int width, int height, int fps)
+int hevc_source_changed(int format, int width, int height, int fps)
 {
 	/* todo: add level routines for clock adjustment per chips */
+	int ret = -1;
+	static int on_setting;
 
+	if (on_setting != 0)
+			return ret;/*on changing clk,ignore this change*/
 
 	if (vdec_source_get(VDEC_HEVC) == width * height * fps)
-		return;
+		return ret;
 
-
-	vdec_source_changed_for_clk_set(format, width, height, fps);
-
+	on_setting = 1;
+	ret = vdec_source_changed_for_clk_set(format, width, height, fps);
 	pr_info("hevc video changed to %d x %d %d fps clk->%dMHZ\n",
 			width, height, fps, vdec_clk_get(VDEC_HEVC));
+	on_setting = 0;
+
+	return ret;
 }
 
 static enum vdec2_usage_e vdec2_usage = USAGE_NONE;
@@ -1112,10 +1131,11 @@ void pre_alloc_vdec_memory(void)
 
 	vdec_dev_reg.mem_start = codec_mm_alloc_for_dma(MEM_NAME,
 		CMA_ALLOC_SIZE / PAGE_SIZE, 4 + PAGE_SHIFT,
-		CODEC_MM_FLAGS_CMA_CLEAR);
+		CODEC_MM_FLAGS_CMA_CLEAR |
+		CODEC_MM_FLAGS_FOR_VDECODER);
 	if (!vdec_dev_reg.mem_start)
 		return;
-	pr_info("vdec base memory alloced %p\n",
+	pr_debug("vdec base memory alloced %p\n",
 	(void *)vdec_dev_reg.mem_start);
 
 	vdec_dev_reg.mem_end = vdec_dev_reg.mem_start +
@@ -1147,7 +1167,7 @@ static int vdec_probe(struct platform_device *pdev)
 		vdec_clock_hi_enable();
 	}
 
-	if (get_cpu_type() >= MESON_CPU_MAJOR_ID_GXBB) {
+	if (get_cpu_type() == MESON_CPU_MAJOR_ID_GXBB) {
 		/* set vdec dmc request to urgent */
 		WRITE_DMCREG(DMC_AM5_CHAN_CTRL, 0x3f203cf);
 	}

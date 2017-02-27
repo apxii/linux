@@ -21,25 +21,52 @@
 #include "h264c_linux.h"
 
 #undef MicroCode
+#define MicroCode gxtvbb_vh264_mc
+#include "gxtvbb_h264c_linux.h"
+
+#undef MicroCode
 #define MicroCode vh264_header_mc
 #include "h264header_linux.h"
+
+#undef MicroCode
+#define MicroCode gxtvbb_vh264_header_mc
+#include "gxtvbb_h264header_linux.h"
 
 #undef MicroCode
 #define MicroCode vh264_data_mc
 #include "h264data_linux.h"
 
 #undef MicroCode
+#define MicroCode gxtvbb_vh264_data_mc
+#include "gxtvbb_h264data_linux.h"
+
+#undef MicroCode
 #define MicroCode vh264_mmco_mc
 #include "h264mmc_linux.h"
+
+#undef MicroCode
+#define MicroCode gxtvbb_vh264_mmco_mc
+#include "gxtvbb_h264mmc_linux.h"
 
 #undef MicroCode
 #define MicroCode vh264_list_mc
 #include "h264list_linux.h"
 
 #undef MicroCode
+#define MicroCode gxtvbb_vh264_list_mc
+#include "gxtvbb_h264list_linux.h"
+
+#undef MicroCode
 #define MicroCode vh264_slice_mc
 #include "h264slice_linux.h"
 
+#undef MicroCode
+#define MicroCode gxtvbb_vh264_slice_mc
+#include "gxtvbb_h264slice_linux.h"
+
+
+#undef FOR_CPUS
+#define FOR_CPUS {MESON_CPU_MAJOR_ID_GXBB, 0}
 #define FOR_VFORMAT VFORMAT_H264
 
 #define REG_FIRMWARE_ALL()\

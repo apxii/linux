@@ -68,6 +68,8 @@ struct vppfilter_mode_s {
 	u32 vpp_sc_misc_;
 	u32 vpp_vsc_start_phase_step;
 	u32 vpp_hsc_start_phase_step;
+	bool vpp_pre_vsc_en;
+	bool vpp_pre_hsc_en;
 };
 
 struct vpp_filters_s {
@@ -126,7 +128,12 @@ struct vpp_frame_par_s {
 /* (MESON_CPU_TYPE==MESON_CPU_TYPE_MESON6TV)||
 (MESON_CPU_TYPE==MESON_CPU_TYPE_MESONG9TV) */
 #define TV_3D_FUNCTION_OPEN
+#endif
+
 #define TV_REVERSE
+
+#ifdef TV_REVERSE
+extern bool reverse;
 #endif
 
 #if 0	/* (MESON_CPU_TYPE==MESON_CPU_TYPE_MESONG9TV) */
@@ -138,6 +145,9 @@ enum select_scaler_path_e {
 #define SUPER_CORE0_WIDTH_MAX  1024
 #define SUPER_CORE1_WIDTH_MAX  2048
 #endif
+#define SUPER_CORE0_WIDTH_MAX  2048
+#define SUPER_CORE1_WIDTH_MAX  4096
+
 
 #ifdef TV_3D_FUNCTION_OPEN
 

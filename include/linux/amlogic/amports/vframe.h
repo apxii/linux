@@ -170,6 +170,7 @@ struct vframe_s {
 	u32 index;
 	u32 type;
 	u32 type_backup;
+	u32 type_original;
 	u32 blend_mode;
 	u32 duration;
 	u32 duration_pulldown;
@@ -205,10 +206,10 @@ struct vframe_s {
 			    unsigned zoom_start_y_lines,
 			    unsigned zoom_end_y_lines, struct vframe_s *vf);
 	void *private_data;
-#if 1
+
 	/* vframe properties */
 	struct vframe_prop_s prop;
-#endif
+
 	struct list_head list;
 	struct tvafe_vga_parm_s vga_parm;
 	/* pixel aspect ratio */
@@ -216,6 +217,7 @@ struct vframe_s {
 	u64 ready_jiffies64;	/* ready from decode on  jiffies_64 */
 	atomic_t use_cnt;
 	u32 frame_dirty;
+	u32 di_process_type; /* 0:not processed by di,1: processed by di */
 } /*vframe_t */;
 
 #if 0

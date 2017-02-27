@@ -42,6 +42,12 @@
                         &clk800_cfg>;
 	};
 
+	gpiomem {
+		compatible = "amlogic,meson-gpiomem";
+		reg = <0x0 0xc8834000 0x0 0x1000>;
+		status = "okay";
+	};
+
 	memory@00000000 {
                 device_type = "memory";
                 linux,usable-memory = <0x0 0x1000000 0x0 0x7f000000>;
@@ -805,6 +811,17 @@
                 status = "ok";
         };
 
+	gpio_keypad{
+		compatible = "amlogic, gpio_keypad";
+		status = "okay";
+		scan_period = <20>;
+		key_num = <1>;
+		key_name = "power";
+		key_code = <116>;
+		irq_keyup = <6>;
+		irq_keydown = <7>;
+		reg = <0x0 0xc8100000 0x0 0x200>;
+	};
 };
 
 &i2c_a {

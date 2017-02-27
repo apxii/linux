@@ -457,6 +457,7 @@ static irqreturn_t vvc1_isr(int irq, void *dev_id)
 			vf->canvas0Addr = vf->canvas1Addr =
 						index2canvas(buffer_index);
 			vf->orientation = 0;
+			vf->type_original = vf->type;
 			set_aspect_ratio(vf, READ_VREG(VC1_PIC_RATIO));
 
 			vfbuf_use[buffer_index]++;
@@ -511,6 +512,7 @@ static irqreturn_t vvc1_isr(int irq, void *dev_id)
 			vf->canvas0Addr = vf->canvas1Addr =
 					index2canvas(buffer_index);
 			vf->orientation = 0;
+			vf->type_original = vf->type;
 			set_aspect_ratio(vf, READ_VREG(VC1_PIC_RATIO));
 
 			vfbuf_use[buffer_index]++;
@@ -591,6 +593,7 @@ static irqreturn_t vvc1_isr(int irq, void *dev_id)
 			vf->canvas0Addr = vf->canvas1Addr =
 						index2canvas(buffer_index);
 			vf->orientation = 0;
+			vf->type_original = vf->type;
 			set_aspect_ratio(vf, READ_VREG(VC1_PIC_RATIO));
 
 			vfbuf_use[buffer_index]++;
@@ -1114,10 +1117,10 @@ static struct codec_profile_t amvdec_vc1_profile = {
 
 static int __init amvdec_vc1_driver_init_module(void)
 {
-	pr_info("amvdec_vc1 module init\n");
+	pr_debug("amvdec_vc1 module init\n");
 
 	if (platform_driver_register(&amvdec_vc1_driver)) {
-		pr_info("failed to register amvdec_vc1 driver\n");
+		pr_err("failed to register amvdec_vc1 driver\n");
 		return -ENODEV;
 	}
 	vcodec_profile_register(&amvdec_vc1_profile);
@@ -1126,7 +1129,7 @@ static int __init amvdec_vc1_driver_init_module(void)
 
 static void __exit amvdec_vc1_driver_remove_module(void)
 {
-	pr_info("amvdec_vc1 module remove.\n");
+	pr_debug("amvdec_vc1 module remove.\n");
 
 	platform_driver_unregister(&amvdec_vc1_driver);
 }

@@ -378,6 +378,7 @@ static irqreturn_t vmpeg12_isr(int irq, void *dev_id)
 			vf->orientation = 0;
 			vf->pts = (pts_valid) ? pts : 0;
 			vf->pts_us64 = (pts_valid) ? pts_us64 : 0;
+			vf->type_original = vf->type;
 
 			vfbuf_use[index] = 1;
 
@@ -451,6 +452,7 @@ static irqreturn_t vmpeg12_isr(int irq, void *dev_id)
 						index2canvas(index);
 			vf->pts = (pts_valid) ? pts : 0;
 			vf->pts_us64 = (pts_valid) ? pts_us64 : 0;
+			vf->type_original = vf->type;
 
 			if ((error_skip(info, vf)) ||
 				((first_i_frame_ready == 0)
@@ -491,6 +493,7 @@ static irqreturn_t vmpeg12_isr(int irq, void *dev_id)
 					index2canvas(index);
 			vf->pts = 0;
 			vf->pts_us64 = 0;
+			vf->type_original = vf->type;
 
 			if ((error_skip(info, vf)) ||
 				((first_i_frame_ready == 0)
@@ -788,6 +791,21 @@ static void vmpeg12_prot_init(void)
 		WRITE_VREG(DOS_SW_RESET0, 0);
 
 		if (get_cpu_type() >= MESON_CPU_MAJOR_ID_M8) {
+
+			READ_VREG(DOS_SW_RESET0);
+			READ_VREG(DOS_SW_RESET0);
+			READ_VREG(DOS_SW_RESET0);
+
+			WRITE_VREG(DOS_SW_RESET0, (1<<7) | (1<<6) | (1<<4));
+			WRITE_VREG(DOS_SW_RESET0, 0);
+
+			WRITE_VREG(DOS_SW_RESET0, (1<<9) | (1<<8));
+			WRITE_VREG(DOS_SW_RESET0, 0);
+
+			READ_VREG(DOS_SW_RESET0);
+			READ_VREG(DOS_SW_RESET0);
+			READ_VREG(DOS_SW_RESET0);
+
 			WRITE_VREG(MDEC_SW_RESET, (1 << 7));
 			WRITE_VREG(MDEC_SW_RESET, 0);
 		}
