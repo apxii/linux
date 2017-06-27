@@ -588,7 +588,7 @@ int sunxi_get_chipid_mac_addr(u8 *addr)
 	tfm = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
 	if (IS_ERR(tfm)) {
 		pr_err("Failed to alloc md5\n");
-		return;
+		return 0;
 	}
 	desc.tfm = tfm;
 	desc.flags = 0;
@@ -621,5 +621,6 @@ int sunxi_get_chipid_mac_addr(u8 *addr)
 
 out:
 	crypto_free_hash(tfm);
+	return 0;
 }
 EXPORT_SYMBOL(sunxi_get_chipid_mac_addr);
