@@ -3,11 +3,11 @@ dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb \
 dtb-$(CONFIG_ARCH_VEXPRESS) += juno.dtb
 dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
 dtb-$(CONFIG_ARCH_SUN50I) += sun50iw1p1-fpga.dtb sun50iw1p1-soc.dtb \
-    sun50i-a64-pine64-plus.dts \
-    pine64.dts \
-    pine64noplus.dts \
-    pine64pinebook.dts \
-    pine64so.dts
+    sun50i-a64-pine64-plus.dtb \
+    pine64.dtb \
+    pine64noplus.dtb \
+    pine64pinebook.dtb \
+    pine64so.dtb
 
 targets += dtbs
 
