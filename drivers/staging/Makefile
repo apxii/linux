@@ -58,3 +58,4 @@ obj-$(CONFIG_SOC_MT7621)	+= mt7621-mmc/
 obj-$(CONFIG_SOC_MT7621)	+= mt7621-eth/
 obj-$(CONFIG_SOC_MT7621)	+= mt7621-dts/
 obj-$(CONFIG_MT7612U)		+= mt7612u/
+obj-$(CONFIG_RTL8812AU)		+= rtl8812au/

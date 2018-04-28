@@ -2,3 +2,7 @@
 	path = drivers/staging/mt7612u
 	url = git@github.com:apxii/mt7612u.git
 	branch = hacks3
+[submodule "drivers/staging/rtl8812au"]
+	path = drivers/staging/rtl8812au
+	url = git@github.com:apxii/rtl8812au-4.2.2.git
+	branch = work

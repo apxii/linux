@@ -134,4 +134,6 @@ source "drivers/staging/mt7621-dts/Kconfig"
 
 source "drivers/staging/mt7612u/Kconfig"
 
+source "drivers/staging/rtl8812au/Kconfig"
+
 endif # STAGING
