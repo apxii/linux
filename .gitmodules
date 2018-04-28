@@ -1,0 +1,4 @@
+[submodule "drivers/staging/mt7612u"]
+	path = drivers/staging/mt7612u
+	url = git@github.com:apxii/mt7612u.git
+	branch = hacks3
