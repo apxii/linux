@@ -113,6 +113,10 @@ EXPORT_SYMBOL(system_state);
 #define MAX_INIT_ARGS CONFIG_INIT_ENV_ARG_LIMIT
 #define MAX_INIT_ENVS CONFIG_INIT_ENV_ARG_LIMIT
 
+#ifdef CONFIG_RTK_MEM_REMAP
+extern void of_reserved_mem_remap(void);
+#endif
+
 extern void time_init(void);
 /* Default late time init is NULL. archs can override this later. */
 void (*__initdata late_time_init)(void);
@@ -570,6 +574,11 @@ asmlinkage __visible void __init start_kernel(void)
 	softirq_init();
 	timekeeping_init();
 	time_init();
+
+#ifdef CONFIG_RTK_MEM_REMAP
+	of_reserved_mem_remap();
+#endif
+
 	sched_clock_postinit();
 	printk_nmi_init();
 	perf_event_init();

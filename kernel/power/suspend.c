@@ -32,6 +32,22 @@
 
 #include "power.h"
 
+#ifdef CONFIG_RTK_PLATFORM
+int RTK_PM_STATE;
+EXPORT_SYMBOL(RTK_PM_STATE);
+#endif/* CONFIG_RTK_PLATFORM */
+
+#ifdef CONFIG_AHCI_RTK
+extern struct task_struct *rtk_sata_dev_task;
+#endif
+
+#ifdef CONFIG_RTK_XEN_SUPPORT
+extern int xen_suspend_to_ram(void);
+#else
+/* should never reach here */
+static inline int xen_suspend_to_ram(void) { BUG(); };
+#endif
+
 const char *pm_labels[] = { "mem", "standby", "freeze", NULL };
 const char *pm_states[PM_SUSPEND_MAX];
 
@@ -424,6 +440,9 @@ int suspend_devices_and_enter(suspend_state_t state)
 
 	suspend_console();
 	suspend_test_start();
+#ifdef CONFIG_RTK_PLATFORM
+	RTK_PM_STATE = state;
+#endif /* CONFIG_RTK_PLATFORM */
 	error = dpm_suspend_start(PMSG_SUSPEND);
 	if (error) {
 		pr_err("PM: Some devices failed to suspend, or early wake event detected\n");
@@ -478,8 +497,23 @@ static void suspend_finish(void)
 static int enter_state(suspend_state_t state)
 {
 	int error;
+#ifdef CONFIG_AHCI_RTK
+	unsigned long timeout;
+#endif
 
 	trace_suspend_resume(TPS("suspend_enter"), state, true);
+#ifdef CONFIG_RTK_PLATFORM
+	if (state == PM_SUSPEND_MEM){
+		sys_sync();
+#ifdef CONFIG_AHCI_RTK
+		if (rtk_sata_dev_task != NULL) {
+			wake_up_process(rtk_sata_dev_task);
+			timeout = jiffies + msecs_to_jiffies(1000);
+			while(time_before(jiffies, timeout));
+		}
+#endif
+	}
+#endif /* CONFIG_RTK_PLATFORM */
 	if (state == PM_SUSPEND_FREEZE) {
 #ifdef CONFIG_PM_DEBUG
 		if (pm_test_level != TEST_NONE && pm_test_level <= TEST_CPUS) {
