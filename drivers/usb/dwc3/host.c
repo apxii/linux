@@ -88,6 +88,9 @@ int dwc3_host_init(struct dwc3 *dwc)
 	xhci->dev.parent	= dwc->dev;
 
 	dwc->xhci = xhci;
+#ifdef CONFIG_USB_RTK_DWC3_DRD_MODE
+	dwc->has_xhci = true;
+#endif
 
 	ret = platform_device_add_resources(xhci, dwc->xhci_resources,
 						DWC3_XHCI_RESOURCES_NUM);
@@ -149,5 +152,8 @@ void dwc3_host_exit(struct dwc3 *dwc)
 			  dev_name(dwc->dev));
 	phy_remove_lookup(dwc->usb3_generic_phy, "usb3-phy",
 			  dev_name(dwc->dev));
+#ifdef CONFIG_USB_RTK_DWC3_DRD_MODE
+	dwc->has_xhci = false;
+#endif
 	platform_device_unregister(dwc->xhci);
 }

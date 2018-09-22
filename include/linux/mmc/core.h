@@ -154,6 +154,19 @@ struct mmc_request {
 
 	/* Allow other commands during this ongoing data transfer or busy wait */
 	bool			cap_cmd_during_tfr;
+	ktime_t			io_start;
+#ifdef CONFIG_BLOCK
+	int			lat_hist_enabled;
+#endif
+
+#ifdef CONFIG_ARCH_RTD119X
+#define MMC_ERR_NONE        0
+#define MMC_ERR_TIMEOUT     1
+#define MMC_ERR_BADCRC      2
+#define MMC_ERR_RMOVE       3
+#define MMC_ERR_FAILED      4
+#define MMC_ERR_INVALID     5
+#endif
 };
 
 struct mmc_card;
@@ -177,6 +190,9 @@ extern void mmc_start_bkops(struct mmc_card *card, bool from_exception);
 extern int mmc_switch(struct mmc_card *, u8, u8, u8, unsigned int);
 extern int mmc_send_tuning(struct mmc_host *host, u32 opcode, int *cmd_error);
 extern int mmc_abort_tuning(struct mmc_host *host, u32 opcode);
+#ifdef CONFIG_MMC_SDHCI_RTK
+extern int mmc_send_tuning_tx(struct mmc_host *host, u32 opcode, int *cmd_error);
+#endif
 extern int mmc_get_ext_csd(struct mmc_card *card, u8 **new_ext_csd);
 
 #define MMC_ERASE_ARG		0x00000000

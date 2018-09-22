@@ -48,6 +48,17 @@ static void sdhci_finish_data(struct sdhci_host *);
 
 static void sdhci_enable_preset_value(struct sdhci_host *host, bool enable);
 
+#if defined(CONFIG_ARCH_RTD139x) || defined(CONFIG_ARCH_RTD16xx)
+#ifdef CONFIG_MMC_SDHCI_RTK
+void Disable_sdio_irq(struct sdhci_host *host)
+{
+	sdhci_writel(host, 0, SDHCI_INT_ENABLE);
+	sdhci_writel(host, 0, SDHCI_SIGNAL_ENABLE);
+}
+EXPORT_SYMBOL(Disable_sdio_irq);
+#endif
+#endif
+
 static void sdhci_dumpregs(struct sdhci_host *host)
 {
 	pr_err(DRIVER_NAME ": =========== REGISTER DUMP (%s)===========\n",
@@ -3086,6 +3097,14 @@ void __sdhci_read_caps(struct sdhci_host *host, u16 *ver, u32 *caps, u32 *caps1)
 		host->caps |= lower_32_bits(dt_caps);
 	}
 
+#ifdef CONFIG_MMC_SDHCI_RTK
+#ifdef CONFIG_ARCH_RTD119X
+	host->caps |= SDHCI_CAN_VDD_330;
+#else
+        host->caps |= (SDHCI_CAN_VDD_180 | SDHCI_CAN_VDD_330);
+#endif
+#endif
+
 	if (host->version < SDHCI_SPEC_300)
 		return;
 
@@ -3127,6 +3146,17 @@ int sdhci_setup_host(struct sdhci_host *host)
 	sdhci_read_caps(host);
 
 	override_timeout_clk = host->timeout_clk;
+#ifdef CONFIG_MMC_SDHCI_RTK
+#ifdef CONFIG_ARCH_RTD119X
+	host->version = SDHCI_SPEC_200;
+#else
+        host->version = SDHCI_SPEC_300;         //workaround, kylin register cannot be showed correctly, so just set host capability 3.0
+#endif
+#else
+        host->version = sdhci_readw(host, SDHCI_HOST_VERSION);
+        host->version = (host->version & SDHCI_SPEC_VER_MASK)
+                                >> SDHCI_SPEC_VER_SHIFT;
+#endif
 
 	if (host->version > SDHCI_SPEC_300) {
 		pr_err("%s: Unknown controller version (%d). You may experience problems.\n",
@@ -3237,14 +3267,19 @@ int sdhci_setup_host(struct sdhci_host *host)
 		host->dma_mask = DMA_BIT_MASK(64);
 		mmc_dev(mmc)->dma_mask = &host->dma_mask;
 	}
-
+#ifdef CONFIG_MMC_SDHCI_RTK
+        if (host->version >= SDHCI_SPEC_300)
+                host->max_clk = 200;
+        else
+                host->max_clk = 100;
+#else
 	if (host->version >= SDHCI_SPEC_300)
 		host->max_clk = (host->caps & SDHCI_CLOCK_V3_BASE_MASK)
 			>> SDHCI_CLOCK_BASE_SHIFT;
 	else
 		host->max_clk = (host->caps & SDHCI_CLOCK_BASE_MASK)
 			>> SDHCI_CLOCK_BASE_SHIFT;
-
+#endif
 	host->max_clk *= 1000000;
 	if (host->max_clk == 0 || host->quirks &
 			SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN) {
