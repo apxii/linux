@@ -23,6 +23,7 @@
 #include "mmc_ops.h"
 
 #define MMC_OPS_TIMEOUT_MS	(10 * 60 * 1000) /* 10 minute timeout */
+#define MMC_MIN_OPS_TIMEOUT_MS (100)            /* minimum 100 ms timeout */
 
 static const u8 tuning_blk_pattern_4bit[] = {
 	0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
@@ -463,6 +464,10 @@ static int mmc_poll_for_busy(struct mmc_card *card, unsigned int timeout_ms,
 	/* We have an unspecified cmd timeout, use the fallback value. */
 	if (!timeout_ms)
 		timeout_ms = MMC_OPS_TIMEOUT_MS;
+#ifdef CONFIG_MMC_RTK_EMMC
+        if (timeout_ms < MMC_MIN_OPS_TIMEOUT_MS)
+                timeout_ms = MMC_MIN_OPS_TIMEOUT_MS;
+#endif
 
 	/*
 	 * In cases when not allowed to poll by using CMD13 or because we aren't

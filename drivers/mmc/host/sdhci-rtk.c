@@ -47,7 +47,7 @@
 #define MAX_PHASE    31
 #define TUNING_CNT    3
 
-#define sdhci_tx_tuning
+//#define sdhci_tx_tuning
 
 static void __iomem *sdio_membase;
 static void __iomem *crt_membase;
@@ -741,6 +741,7 @@ out:
     return ret;
 }
 
+#ifdef sdhci_tx_tuning
 static int rtk_sdhci_tuning_tx(struct sdhci_host *host)
 {
     int sample_point = 0;
@@ -790,6 +791,7 @@ static int rtk_sdhci_tuning_tx(struct sdhci_host *host)
 out:
     return ret;
 }
+#endif
 
 static int rtk_sdhci_execute_tuning(struct sdhci_host *host, u32 opcode)
 {

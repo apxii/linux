@@ -1125,33 +1125,6 @@ static int mmc_select_hs_ddr(struct mmc_card *card)
 	return err;
 }
 
-#ifdef CONFIG_MMC_RTK_EMMC
-static int mmc_select_ddr50(struct mmc_card *card)
-{
-	int err = 0;
-	u8 val;
-
-	err = __mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-				EXT_CSD_HS_TIMING, EXT_CSD_TIMING_HS,
-				card->ext_csd.generic_cmd6_time, MMC_TIMING_MMC_HS,
-				true, true, true);
-	if (!err) {
-		mmc_set_timing(card->host, MMC_TIMING_MMC_HS);
-		err = mmc_switch_status(card);
-	}
-
-	if (err)
-		pr_warn("%s: switch to high-speed failed, err:%d\n",
-			mmc_hostname(card->host), err);
-
-	err = mmc_select_bus_width(card);
-	if (err > 0 && mmc_card_hs(card)) {
-		err = mmc_select_hs_ddr(card);
-	}
-	return err;
-}
-#endif
-
 static int mmc_select_hs400(struct mmc_card *card)
 {
 	struct mmc_host *host = card->host;
@@ -1516,12 +1489,19 @@ static int mmc_select_hs200(struct mmc_card *card)
 		err = __mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
 				   EXT_CSD_HS_TIMING, val,
 				   card->ext_csd.generic_cmd6_time, 0,
+#ifdef CONFIG_MMC_RTK_EMMC
+				   true, true, true);
+#else
 				   true, false, true);
+#endif
 		if (err)
 			goto err;
 		old_timing = host->ios.timing;
 		mmc_set_timing(host, MMC_TIMING_MMC_HS200);
 
+#ifdef CONFIG_MMC_RTK_EMMC
+		return err;
+#else
 		/*
 		 * For HS200, CRC errors are not a reliable way to know the
 		 * switch failed. If there really is a problem, we would expect
@@ -1535,6 +1515,7 @@ static int mmc_select_hs200(struct mmc_card *card)
 		 */
 		if (err == -EBADMSG)
 			mmc_set_timing(host, old_timing);
+#endif
 	}
 err:
 	if (err) {
@@ -1562,10 +1543,6 @@ static int mmc_select_timing(struct mmc_card *card)
 		err = mmc_select_hs400es(card);
 	else if (card->mmc_avail_type & EXT_CSD_CARD_TYPE_HS200)
 		err = mmc_select_hs200(card);
-#ifdef CONFIG_MMC_RTK_EMMC
-	else if (card->mmc_avail_type & EXT_CSD_CARD_TYPE_DDR_52)
-		err = mmc_select_ddr50(card);
-#endif
 	else if (card->mmc_avail_type & EXT_CSD_CARD_TYPE_HS)
 		err = mmc_select_hs(card);
 
@@ -1593,13 +1570,6 @@ EXPORT_SYMBOL(rtkemmc_select_timing);
  * Execute tuning sequence to seek the proper bus operating
  * conditions for HS200 and HS400, which sends CMD21 to the device.
  */
-#ifdef CONFIG_MMC_RTK_EMMC
-static int mmc_ddr50_tuning(struct mmc_card *card)
-{
-	card->host->mode = MODE_DDR;
-	return mmc_execute_tuning(card);
-}
-#endif
 static int mmc_hs200_tuning(struct mmc_card *card)
 {
 	struct mmc_host *host = card->host;
@@ -1892,16 +1862,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	err = mmc_select_timing(card);
 	if (err)
 		goto free_card;
-#ifdef CONFIG_MMC_RTK_EMMC
-	if (mmc_card_ddr52(card)) {
-		err = mmc_ddr50_tuning(card);
-                if (err)
-                        goto free_card;
-	}
-	else if (mmc_card_hs200(card)) {
-#else
 	if (mmc_card_hs200(card)) {
-#endif
 		err = mmc_hs200_tuning(card);
 		if (err)
 			goto free_card;
