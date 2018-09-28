@@ -17,6 +17,10 @@
 
 #include <linux/platform_device.h>
 
+#ifdef CONFIG_USB_DWC3_RTK
+#include <linux/of_device.h>
+#endif
+
 #include "core.h"
 
 static int dwc3_host_get_irq(struct dwc3 *dwc)
@@ -84,6 +88,10 @@ int dwc3_host_init(struct dwc3 *dwc)
 		dev_err(dwc->dev, "couldn't allocate xHCI device\n");
 		return -ENOMEM;
 	}
+
+#ifdef CONFIG_USB_DWC3_RTK
+	of_dma_configure(&xhci->dev, NULL);
+#endif
 
 	xhci->dev.parent	= dwc->dev;
 
