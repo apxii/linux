@@ -1243,3 +1243,4 @@ static struct platform_driver sdhci_rtk_driver = {
 module_platform_driver(sdhci_rtk_driver);
 
 MODULE_DESCRIPTION("SDHCI host driver for Realtek");
+MODULE_LICENSE("GPL v2");
