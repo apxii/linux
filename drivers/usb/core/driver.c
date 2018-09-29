@@ -274,6 +274,7 @@ int RTK_usb_probe_device(struct device *dev)
 	ret = usb_probe_device(dev);
 	return ret;
 }
+EXPORT_SYMBOL(RTK_usb_probe_device);
 #endif
 
 /* called from driver core with dev locked */
@@ -295,6 +296,7 @@ int RTK_usb_unbind_device(struct device *dev)
 	ret = usb_unbind_device(dev);
 	return ret;
 }
+EXPORT_SYMBOL(RTK_usb_unbind_device);
 #endif
 
 /* called from driver core with dev locked */

@@ -31,6 +31,7 @@ int get_rtd_chip_id(void) {
 	__iounmap(chip_info1_addr);
 	return cpu_id;
 }
+EXPORT_SYMBOL(get_rtd_chip_id);
 
 #define RTD129x_CHIP_A00 (0x00000000)
 #define RTD129x_CHIP_A01 (0x00010000)
@@ -58,5 +59,6 @@ int get_rtd_chip_revision(void) {
 	}
 	return 0;
 }
+EXPORT_SYMBOL(get_rtd_chip_revision);
 
 

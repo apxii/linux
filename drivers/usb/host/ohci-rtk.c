@@ -347,6 +347,7 @@ int RTK_ohci_force_suspend(const char *func)
 		pr_debug("%s NO OHCI !!!\n", __func__);
 	return 0;
 }
+EXPORT_SYMBOL(RTK_ohci_force_suspend);
 #endif //CONFIG_USB_PATCH_ON_RTK
 
 #ifdef CONFIG_PM

@@ -215,6 +215,7 @@ int rtk_usb_manager_schedule_work(struct device *usb_dev,
     dev_dbg(data->dev, "%s Exit ..\n", __func__);
 	return 0;
 }
+EXPORT_SYMBOL(rtk_usb_manager_schedule_work);
 
 /* enable hw_pm (L4 ICG)
  *   The hw_pm function will be reset after doing soft_reset, so
@@ -575,6 +576,7 @@ int rtk_usb_set_type_c_switch_gpio(struct device *type_c_dev, bool high)
 	dev = data->dev;
 	return __port0_switch_gpio(data, high);
 }
+EXPORT_SYMBOL(rtk_usb_set_type_c_switch_gpio);
 
 static int __port0_gpio_on_off(struct manager_data *data, bool on);
 
@@ -609,6 +611,7 @@ int rtk_usb_type_c_power_on_off(struct device *type_c_dev, bool on) {
 
 	return ret;
 }
+EXPORT_SYMBOL(rtk_usb_type_c_power_on_off);
 
 static int __port0_gpio_on_off(struct manager_data *data, bool on)
 {
@@ -913,6 +916,7 @@ int rtk_usb_init_gpio_power_on(struct device *usb_dev) {
 	mutex_unlock(&data->lock);
 	return 0;
 }
+EXPORT_SYMBOL(rtk_usb_init_gpio_power_on);
 
 int rtk_usb_host_gpio_power_on(void)
 {

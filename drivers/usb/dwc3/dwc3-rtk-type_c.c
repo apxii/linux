@@ -205,6 +205,11 @@ struct type_c_data {
 // Parameter
 #define DETECT_TIME 50 //ms
 
+static inline u32 rtk_dwc3_readl(void __iomem *base, u32 offset)
+{
+	return readl(base + offset);
+}
+
 static void enable_writel(int value, void __iomem *addr)
 {
 	writel(value | readl(addr),  addr);
@@ -789,8 +794,8 @@ void boot_time_check(struct work_struct *work)
 		int no_host_connect = 0;
 		int no_run_gadget = 0;
 		u32 enable_cc = at_cc1?enable_cc1:enable_cc2;
-		u32 dsts = dwc3_readl(type_c->dwc->regs, DWC3_DSTS);
-		u32 dctl = dwc3_readl(type_c->dwc->regs, DWC3_DCTL);
+		u32 dsts = rtk_dwc3_readl(type_c->dwc->regs, DWC3_DSTS);
+		u32 dctl = rtk_dwc3_readl(type_c->dwc->regs, DWC3_DCTL);
 
 		dev_info(dev, "%s: Device mode check DSTS=%x DCTL=%x\n", __func__,
 				dsts, dctl);

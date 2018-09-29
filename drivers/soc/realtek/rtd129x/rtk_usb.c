@@ -125,6 +125,7 @@ int rtk_usb_set_hw_l4icg_on_off(struct rtk_usb *rtk_usb,
 
 	return 0;
 }
+EXPORT_SYMBOL(rtk_usb_set_hw_l4icg_on_off);
 
 static int __isolate_phy_from_a_to_d(struct rtk_usb *rtk_usb)
 {
@@ -281,6 +282,7 @@ int rtk_usb_iso_power_ctrl(struct rtk_usb *rtk_usb,
 
 	return 0;
 }
+EXPORT_SYMBOL(rtk_usb_iso_power_ctrl);
 
 int rtk_usb_port_suspend_resume(struct rtk_usb *rtk_usb,
 	    enum usb_port_num port_num, bool is_suspend)
@@ -346,6 +348,7 @@ int rtk_usb_port_suspend_resume(struct rtk_usb *rtk_usb,
 	pr_debug("%s END\n", __func__);
 	return 0;
 }
+EXPORT_SYMBOL(rtk_usb_port_suspend_resume);
 
 struct rtk_usb *rtk_usb_soc_init(struct device_node *sub_node)
 {
@@ -435,6 +438,7 @@ struct rtk_usb *rtk_usb_soc_init(struct device_node *sub_node)
 
 	return rtk_usb;
 }
+EXPORT_SYMBOL(rtk_usb_soc_init);
 
 int rtk_usb_soc_free(struct rtk_usb **rtk_usb)
 {
@@ -444,3 +448,4 @@ int rtk_usb_soc_free(struct rtk_usb **rtk_usb)
 	}
 	return 0;
 }
+EXPORT_SYMBOL(rtk_usb_soc_free);
