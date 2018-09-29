@@ -27,7 +27,6 @@
 #include <linux/file.h>
 #include <linux/console.h>
 #include <linux/platform_device.h>
-#include <linux/fence.h>
 #include <linux/sync_file.h>
 #include <linux/dma-buf.h>
 #include <uapi/linux/sync_file.h>
@@ -896,13 +895,13 @@ static void dc_fence_wait(DC_INFO * pdc_info, struct sync_file *fence)
 	 * by a longer one provides useful information for debugging.
 	 */
 
-	int err = fence_wait_timeout(fence->fence, 1, DC_SHORT_FENCE_TIMEOUT);
+	int err = dma_fence_wait_timeout(dma_fence_get(fence->fence), 1, DC_SHORT_FENCE_TIMEOUT);
 
 	if (err >= 0)
 		return;
 
 	if (err == -ETIME)
-		err = fence_wait_timeout(fence->fence, 1, DC_LONG_FENCE_TIMEOUT);
+		err = dma_fence_wait_timeout(dma_fence_get(fence->fence), 1, DC_LONG_FENCE_TIMEOUT);
 
 	if (err < 0)
 		pr_warn("error waiting on fence: %d\n", err);

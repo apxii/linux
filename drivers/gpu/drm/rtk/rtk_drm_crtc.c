@@ -62,10 +62,10 @@ static void rtk_crtc_swap_post_release(struct rtk_crtc_swap_post * cfg)
         return;
 
     if (cfg->fence) {
-        int err = fence_wait_timeout(cfg->fence->fence, 1, RTK_CRTC_SWAP_SHORT_FENCE_TIMEOUT_MS);
+        int err = dma_fence_wait_timeout(dma_fence_get(cfg->fence->fence), 1, RTK_CRTC_SWAP_SHORT_FENCE_TIMEOUT_MS);
         if (err == -ETIME) {
             DRM_ERROR("DRM %s:%d fence %p\n", __FUNCTION__, __LINE__, cfg->fence);
-            err = fence_wait_timeout(cfg->fence->fence, 1, RTK_CRTC_SWAP_SHORT_FENCE_TIMEOUT_MS);
+            err = dma_fence_wait_timeout(dma_fence_get(cfg->fence->fence), 1, RTK_CRTC_SWAP_SHORT_FENCE_TIMEOUT_MS);
         }
         if (err < 0)
             DRM_ERROR("DRM %s:%d fence %p\n", __FUNCTION__, __LINE__, cfg->fence);
@@ -101,6 +101,7 @@ struct rtk_crtc_swap_post * rtk_crtc_swap_post_create(
     return cfg;
 }
 
+#if 0
 static int rtk_crtc_swap_post_to_worker(struct drm_crtc *crtc, struct drm_framebuffer *fb,
         struct drm_pending_vblank_event *event)
 {
@@ -185,14 +186,15 @@ static int show_framebuffer_on_crtc(struct drm_crtc *crtc,
     DRM_DEBUG_KMS("DRM %s %d", __FUNCTION__, __LINE__);
     return 0;
 }
+#endif
 
 static int rtk_crtc_page_flip(struct drm_crtc *crtc, struct drm_framebuffer *fb,
         struct drm_pending_vblank_event *event,
         uint32_t flags)
 {
     DRM_DEBUG_KMS("DRM %s: crtc=%p, fb=%p, event=%p\n", __func__, crtc, fb, event);
-    //return drm_atomic_helper_page_flip(crtc, fb, event, flags);
-    return show_framebuffer_on_crtc(crtc, fb, event);
+    return drm_atomic_helper_page_flip(crtc, fb, event, flags);
+    //return show_framebuffer_on_crtc(crtc, fb, event);
 }
 
 void rtk_crtc_finish_page_flip(struct rtk_drm_crtc *rtk_crtc)

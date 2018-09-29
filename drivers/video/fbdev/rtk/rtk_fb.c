@@ -43,7 +43,9 @@
 
 #include "debug.h"
 #include "rtk_fb.h"
+#if 0
 #include "dc2vo/dc2vo.h"
+#endif
 
 #ifdef CONFIG_REALTEK_AVCPU
 #include "avcpu.h"
@@ -148,9 +150,13 @@ __maybe_unused static inline int	rtk_fb_memory_bypePrePixel  (struct rtk_fb_memo
 
 static int fb_avcpu_event_notify(struct notifier_block *self, unsigned long action, void *data)
 {
+#if 0
 	struct fb_info *info = (struct fb_info *)registered_fb[0];
 	struct rtk_fb *fb = container_of(info, struct rtk_fb, fb);
 	return DC_avcpu_event_notify(action, &fb->video_info);
+#else
+	return 0;
+#endif
 }
 
 __maybe_unused static struct notifier_block fb_avcpu_event_notifier = {
@@ -258,7 +264,11 @@ static int rtk_fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *inf
 	fb->fb.var.xres_virtual = var->xres_virtual;
 	fb->fb.var.yres_virtual = var->yres_virtual;
 
+#if 0
 	return DC_Swap_Buffer(info, &fb->video_info);
+#else
+	return 0;
+#endif
 }
 
 static int rtk_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
@@ -367,8 +377,11 @@ static int rtk_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
 
 	if (gat_cmd)
 		return ret;
-
+#if 0
 	return DC_Ioctl(info, (void *)&fb->video_info, cmd, arg);
+#else
+	return ret;
+#endif
 }
 
 static int rtk_fb_memory_alloc(struct rtk_fb_memory ** ppMem, int width,
@@ -711,8 +724,9 @@ static int rtk_fb_probe(struct platform_device *pdev)
 
 	dev_set_drvdata(&pdev->dev, fb);
 
+#if 0
 	DC_Init(&fb->video_info, &fb->fb, fb->irq);
-
+#endif
 	fb->fb.fbops = &rtk_fb_ops;
 
 	/* Avoid black screen */
@@ -731,7 +745,9 @@ static int rtk_fb_probe(struct platform_device *pdev)
 err_register_framebuffer_failed:
 
 err_fb_set_var_failed:
+#if 0
 	DC_Deinit(&fb->video_info);
+#endif
 	kfree(fb);
 
 err_fb_alloc_failed:
@@ -741,18 +757,26 @@ err_fb_alloc_failed:
 
 static int rtk_fb_suspend(struct device *dev)
 {
+#if 0
 	struct platform_device *pdev = to_platform_device(dev);
 	struct rtk_fb *fb = platform_get_drvdata(pdev);
 
 	return DC_Suspend(&fb->video_info);
+#else
+	return 0;
+#endif
 }
 
 static int rtk_fb_resume(struct device *dev)
 {
+#if 0
 	struct platform_device *pdev = to_platform_device(dev);
 	struct rtk_fb *fb = platform_get_drvdata(pdev);
 
 	return DC_Resume(&fb->video_info);
+#else
+	return 0;
+#endif
 }
 
 static int rtk_fb_remove(struct platform_device *pdev)
@@ -762,7 +786,9 @@ static int rtk_fb_remove(struct platform_device *pdev)
 #if IS_ENABLED(CONFIG_REALTEK_AVCPU)
 	unregister_avcpu_notifier(&fb_avcpu_event_notifier);
 #endif
+#if 0
 	DC_Deinit(&fb->video_info);
+#endif
 	unregister_framebuffer(&fb->fb);
 	rtk_fb_memory_destroy(&fb->pMem);
 	if (fb != NULL)

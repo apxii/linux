@@ -59,7 +59,9 @@ static void rtk_disable_vblank(struct drm_device *dev, unsigned int pipe)
 static int vblank_thread(void *data)
 {
     struct drm_device *dev = (struct drm_device *)data;
+#if 0
     unsigned long long nsecs = 0;
+#endif
 #ifdef PAGE_FLIP_ALING_WITH_VBLANK
     struct rtk_drm_private *priv = dev->dev_private;
 #endif
@@ -68,7 +70,11 @@ static int vblank_thread(void *data)
 #ifdef PAGE_FLIP_ALING_WITH_VBLANK
         rtk_crtc_finish_page_flip(priv->rtk_crtc);
 #endif
+#if 0
         DC_VsyncWait(&nsecs);
+#else
+	msleep(16);
+#endif
     } while(!kthread_should_stop());
 
     return 0;
@@ -311,7 +317,7 @@ static struct drm_driver driver = {
     .unload                     = rtk_drm_unload,
     //.set_busid                  = drm_platform_set_busid,
     .preclose                   = rtk_drm_preclose,
-    .get_vblank_counter         = drm_vblank_count,
+    .get_vblank_counter         = drm_vblank_no_hw_counter,
     .enable_vblank              = rtk_enable_vblank,
     .disable_vblank             = rtk_disable_vblank,
     //.suspend                    = rtk_drm_suspend,
