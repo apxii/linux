@@ -9865,7 +9865,7 @@ M:	Peter Rosin <peda@axentia.se>
 S:	Maintained
 F:	Documentation/ABI/testing/sysfs-class-mux*
 F:	Documentation/devicetree/bindings/mux/
-F:	include/linux/dt-bindings/mux/
+F:	include/dt-bindings/mux/
 F:	include/linux/mux/
 F:	drivers/mux/
 
@@ -13062,7 +13062,7 @@ SELINUX SECURITY MODULE
 M:	Paul Moore <paul@paul-moore.com>
 M:	Stephen Smalley <sds@tycho.nsa.gov>
 M:	Eric Paris <eparis@parisplace.org>
-L:	selinux@tycho.nsa.gov (moderated for non-subscribers)
+L:	selinux@vger.kernel.org
 W:	https://selinuxproject.org
 W:	https://github.com/SELinuxProject
 T:	git git://git.kernel.org/pub/scm/linux/kernel/git/pcmoore/selinux.git
