@@ -25,7 +25,7 @@ static const struct usb_device_id mt76x2u_device_table[] = {
 	{ USB_DEVICE(0x0b05, 0x1833) },	/* Asus USB-AC54 */
 	{ USB_DEVICE(0x0b05, 0x17eb) },	/* Asus USB-AC55 */
 	{ USB_DEVICE(0x0b05, 0x180b) },	/* Asus USB-N53 B1 */
-	{ USB_DEVICE(0x0e8d, 0x7612) },	/* Aukey USB-AC1200 */
+	{ USB_DEVICE(0x0e8d, 0x761b) },	/* Aukey USB-AC1200 */
 	{ USB_DEVICE(0x057c, 0x8503) },	/* Avm FRITZ!WLAN AC860 */
 	{ USB_DEVICE(0x7392, 0xb711) },	/* Edimax EW 7722 UAC */
 	{ USB_DEVICE(0x0846, 0x9053) },	/* Netgear A6210 */
