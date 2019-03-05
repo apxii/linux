@@ -4,5 +4,5 @@
 	branch = hacks3
 [submodule "drivers/staging/rtl8812au"]
 	path = drivers/staging/rtl8812au
-	url = git@github.com:apxii/rtl8812au-4.2.2.git
+	url = git@github.com:apxii/rtl8812au.git
 	branch = work
