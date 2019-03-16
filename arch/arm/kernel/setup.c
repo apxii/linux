@@ -118,6 +118,7 @@ struct processor processor __ro_after_init;
 struct processor *cpu_vtable[NR_CPUS] = {
 	[0] = &processor,
 };
+EXPORT_SYMBOL(cpu_vtable);
 #endif
 #endif
 #ifdef MULTI_TLB
