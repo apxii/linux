@@ -51,4 +51,3 @@ obj-$(CONFIG_FIELDBUS_DEV)     += fieldbus/
 obj-$(CONFIG_KPC2000)		+= kpc2000/
 obj-$(CONFIG_MT7612U)		+= mt7612u/
 obj-$(CONFIG_RTL8812AU)		+= rtl8812au/
->>>>>>> kernel/master
