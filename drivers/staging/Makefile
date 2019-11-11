@@ -55,3 +55,4 @@ obj-$(CONFIG_EXFAT_FS)		+= exfat/
 obj-$(CONFIG_QLGE)		+= qlge/
 obj-$(CONFIG_MT7612U)		+= mt7612u/
 obj-$(CONFIG_RTL8812AU)		+= rtl8812au/
+obj-$(CONFIG_VBOXSF_FS)		+= vboxsf/
