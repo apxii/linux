@@ -125,6 +125,8 @@ source "drivers/staging/exfat/Kconfig"
 
 source "drivers/staging/qlge/Kconfig"
 
+source "drivers/staging/hp/Kconfig"
+
 source "drivers/staging/mt7612u/Kconfig"
 source "drivers/staging/rtl8812au/Kconfig"
 
