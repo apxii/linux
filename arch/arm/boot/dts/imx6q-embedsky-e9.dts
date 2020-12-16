@@ -17,6 +17,6 @@
 
 / {
 	chosen {
-		linux,stdout-path = &uart4;
+		stdout-path = &uart4;
 	};
 };
